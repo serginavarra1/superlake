@@ -1,5 +1,4 @@
 import {
-  BadgeCheck,
   Check,
   ChevronsUpDown,
   LogOut,
