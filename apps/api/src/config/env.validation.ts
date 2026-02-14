@@ -6,8 +6,14 @@ class EnvironmentVariables {
   DATABASE_URL!: string;
 
   @IsString()
+  CLERK_SECRET_KEY!: string;
+
+  @IsString()
+  CLERK_PUBLISHABLE_KEY!: string;
+
+  @IsString()
   @IsOptional()
-  CLERK_SECRET_KEY?: string;
+  CLERK_AUTHORIZED_PARTIES?: string;
 
   @IsString()
   @IsOptional()
