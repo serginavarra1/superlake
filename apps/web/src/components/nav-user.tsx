@@ -4,6 +4,7 @@ import {
   LogOut,
   Plus,
   Settings,
+  User,
 } from "lucide-react"
 import {
   useClerk,
@@ -106,7 +107,7 @@ export function NavUser() {
                       }
                       className="gap-2"
                     >
-                      <Avatar className="size-6 rounded-md">
+                      <Avatar className="size-5 rounded-md">
                         <AvatarImage
                           src={membership.organization.imageUrl}
                           alt={membership.organization.name}
@@ -124,7 +125,7 @@ export function NavUser() {
                   className="gap-2"
                   onClick={() => openCreateOrganization()}
                 >
-                  <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
+                  <div className="flex size-5 items-center justify-center rounded-md border bg-transparent">
                     <Plus className="size-4" />
                   </div>
                   <span className="text-muted-foreground">Create organization</span>
@@ -133,9 +134,7 @@ export function NavUser() {
                   className="gap-2"
                   onClick={() => openOrganizationProfile()}
                 >
-                  <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
-                    <Settings className="size-4" />
-                  </div>
+                  <Settings className="size-4" />
                   <span className="text-muted-foreground">Manage organization</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -143,7 +142,7 @@ export function NavUser() {
             )}
             <DropdownMenuGroup>
               <DropdownMenuItem onClick={() => openUserProfile()}>
-                <Settings />
+                <User />
                 Account
               </DropdownMenuItem>
             </DropdownMenuGroup>

@@ -27,7 +27,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader >
-        <div className="flex items-center gap-2 p-2 group-data-[collapsible=icon]:p-0">
+        <div className="flex items-center gap-2 p-2 transition-all group-data-[collapsible=icon]:p-0">
           <div className="flex size-8 items-center justify-center rounded-lg bg-red-500 text-white shrink-0">
             <Flame className="size-4" strokeWidth={3} />
           </div>

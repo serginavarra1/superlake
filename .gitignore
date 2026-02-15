@@ -35,3 +35,5 @@ apps/api/prisma/migrations/
 
 # Vite
 apps/web/.vite/
+
+credentials

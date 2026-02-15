@@ -5,6 +5,9 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
+import { OrganizationsModule } from './organizations/organizations.module';
+import { GcpModule } from './gcp/gcp.module';
 import { validate } from './config/env.validation';
 
 @Module({
@@ -16,6 +19,9 @@ import { validate } from './config/env.validation';
     }),
     PrismaModule,
     AuthModule,
+    GcpModule,
+    OrganizationsModule,
+    WebhooksModule,
   ],
   controllers: [AppController],
   providers: [AppService],

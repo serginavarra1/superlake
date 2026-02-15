@@ -13,7 +13,11 @@ class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
-  CLERK_AUTHORIZED_PARTIES?: string;
+  CLERK_WEBHOOK_SECRET?: string;
+
+  @IsString()
+  @IsOptional()
+  GCP_PARENT_FOLDER_ID?: string;
 
   @IsString()
   @IsOptional()

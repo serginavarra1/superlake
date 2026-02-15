@@ -1,9 +1,18 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id             String   @id @default(cuid())
+  clerkOrgId     String   @unique
+  gcpProjectId   String?  @unique
+  gcpStatus      String   @default("pending")
+  gcpError       String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
