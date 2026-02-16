@@ -12,12 +12,13 @@ class EnvironmentVariables {
   CLERK_PUBLISHABLE_KEY!: string;
 
   @IsString()
-  @IsOptional()
-  CLERK_WEBHOOK_SECRET?: string;
+  CLERK_WEBHOOK_SECRET!: string;
 
   @IsString()
-  @IsOptional()
-  GCP_PARENT_FOLDER_ID?: string;
+  GCP_PARENT_FOLDER_ID!: string;
+
+  @IsString()
+  GCP_BILLING_ACCOUNT_ID!: string;
 
   @IsString()
   @IsOptional()

@@ -7,12 +7,21 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum GcpStatus {
+  pending
+  creating
+  active
+  failed
+  deleting
+  delete_failed
+}
+
 model Organization {
-  id             String   @id @default(cuid())
-  clerkOrgId     String   @unique
-  gcpProjectId   String?  @unique
-  gcpStatus      String   @default("pending")
+  id             String    @id @default(cuid())
+  clerkOrgId     String    @unique
+  gcpProjectId   String?   @unique
+  gcpStatus      GcpStatus @default(pending)
   gcpError       String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }

@@ -112,7 +112,7 @@ export function NavUser() {
                           src={membership.organization.imageUrl}
                           alt={membership.organization.name}
                         />
-                        <AvatarFallback className="rounded-md">
+                        <AvatarFallback className="rounded-md color-black">
                           {membership.organization.name.slice(0, 2).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
@@ -128,14 +128,14 @@ export function NavUser() {
                   <div className="flex size-5 items-center justify-center rounded-md border bg-transparent">
                     <Plus className="size-4" />
                   </div>
-                  <span className="text-muted-foreground">Create organization</span>
+                  <span>Create organization</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="gap-2"
                   onClick={() => openOrganizationProfile()}
                 >
                   <Settings className="size-4" />
-                  <span className="text-muted-foreground">Manage organization</span>
+                  <span>Manage organization</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
               </>

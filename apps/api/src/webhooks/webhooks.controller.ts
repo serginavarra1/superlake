@@ -5,60 +5,94 @@ import {
   Logger,
   Req,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import { Webhook } from 'svix';
 import { Public } from '../common/decorators/public.decorator';
 import { OrganizationsService } from '../organizations/organizations.service';
 
+interface ClerkWebhookEvent {
+  type: string;
+  data: { id: string; name: string };
+}
+
 @Controller('webhooks')
 export class WebhooksController {
-  private logger = new Logger(WebhooksController.name);
-  private wh: Webhook;
+  private readonly logger = new Logger(WebhooksController.name);
+  private readonly wh: Webhook;
 
-  constructor(private organizationsService: OrganizationsService) {
-    const secret = process.env.CLERK_WEBHOOK_SECRET;
-    if (!secret) {
-      throw new Error('CLERK_WEBHOOK_SECRET env var is not set');
-    }
-    this.wh = new Webhook(secret);
+  constructor(
+    private organizationsService: OrganizationsService,
+    private configService: ConfigService,
+  ) {
+    this.wh = new Webhook(
+      this.configService.get<string>('CLERK_WEBHOOK_SECRET')!,
+    );
   }
 
   @Public()
   @Post('clerk')
   async handleClerkWebhook(@Req() req: Request) {
-    try {
-      const payload = (req as any).rawBody?.toString('utf8');
-      if (!payload) {
-        throw new BadRequestException('Missing request body');
-      }
+    const event = this.verifyWebhook(req);
 
-      const event = this.wh.verify(payload, {
+    this.logger.log(`Received webhook event: ${event.type}`);
+
+    // Process event asynchronously — respond 200 to Clerk immediately
+    this.processEvent(event).catch((error) => {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Failed to process webhook event ${event.type}: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+    });
+
+    return { success: true };
+  }
+
+  private verifyWebhook(req: Request): ClerkWebhookEvent {
+    const payload = (req as Request & { rawBody?: Buffer }).rawBody?.toString(
+      'utf8',
+    );
+    if (!payload) {
+      throw new BadRequestException('Missing request body');
+    }
+
+    try {
+      return this.wh.verify(payload, {
         'svix-id': req.headers['svix-id'] as string,
         'svix-timestamp': req.headers['svix-timestamp'] as string,
         'svix-signature': req.headers['svix-signature'] as string,
-      }) as { type: string; data: { id: string; name: string } };
+      }) as ClerkWebhookEvent;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(`Webhook verification failed: ${errorMessage}`);
+      throw new BadRequestException('Webhook verification failed');
+    }
+  }
 
-      this.logger.log(`Received webhook event: ${event.type}`);
-
-      if (event.type === 'organization.created') {
-        const clerkOrgId = event.data.id;
-        const orgName = event.data.name;
-
+  private async processEvent(event: ClerkWebhookEvent): Promise<void> {
+    switch (event.type) {
+      case 'organization.created': {
+        const { id: clerkOrgId, name: orgName } = event.data;
         this.logger.log(
           `Creating organization: ${clerkOrgId} (${orgName})`,
         );
-
         await this.organizationsService.provisionOrganization(
           clerkOrgId,
           orgName,
         );
+        break;
       }
-
-      return { success: true };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Webhook verification failed: ${errorMessage}`);
-      throw new BadRequestException('Webhook verification failed');
+      case 'organization.deleted': {
+        const { id: clerkOrgId } = event.data;
+        this.logger.log(`Deleting organization: ${clerkOrgId}`);
+        await this.organizationsService.deprovisionOrganization(clerkOrgId);
+        break;
+      }
+      default:
+        this.logger.log(`Ignoring unhandled webhook event: ${event.type}`);
     }
   }
 }
