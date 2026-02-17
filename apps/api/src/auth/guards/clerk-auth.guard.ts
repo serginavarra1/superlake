@@ -41,11 +41,16 @@ export class ClerkAuthGuard implements CanActivate {
         authorizedParties: this.getAuthorizedParties(),
       });
 
+      const org = payload.o as
+        | { id: string; rol: string; slg: string }
+        | undefined;
+
       const auth: ClerkUser = {
         userId: payload.sub,
         sessionId: payload.sid,
-        orgId: payload.org_id,
-        orgRole: payload.org_role,
+        orgId: org?.id,
+        orgRole: org?.rol,
+        orgSlug: org?.slg,
       };
 
       (request as Request & { auth: ClerkUser }).auth = auth;

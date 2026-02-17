@@ -11,6 +11,10 @@ import ProtectedRoute from './components/protected-route'
 import SignInPage from './pages/sign-in'
 import SignUpPage from './pages/sign-up'
 import HomePage from './pages/home'
+import ReportsPage from './pages/reports'
+import AIChatPage from './pages/ai-chat'
+import WorkbenchPage from './pages/workbench'
+import ConnectionsPage from './pages/connections'
 
 function App() {
   return (
@@ -34,6 +38,10 @@ function App() {
               <Route element={<ProtectedRoute />}>
                 <Route element={<AppLayout />}>
                   <Route path="/home" element={<HomePage />} />
+                  <Route path="/reports" element={<ReportsPage />} />
+                  <Route path="/ai-chat" element={<AIChatPage />} />
+                  <Route path="/data-management/workbench" element={<WorkbenchPage />} />
+                  <Route path="/data-management/connections" element={<ConnectionsPage />} />
                 </Route>
               </Route>
 

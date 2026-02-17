@@ -76,9 +76,6 @@ export class WebhooksController {
     switch (event.type) {
       case 'organization.created': {
         const { id: clerkOrgId, name: orgName } = event.data;
-        this.logger.log(
-          `Creating organization: ${clerkOrgId} (${orgName})`,
-        );
         await this.organizationsService.provisionOrganization(
           clerkOrgId,
           orgName,
@@ -87,12 +84,11 @@ export class WebhooksController {
       }
       case 'organization.deleted': {
         const { id: clerkOrgId } = event.data;
-        this.logger.log(`Deleting organization: ${clerkOrgId}`);
         await this.organizationsService.deprovisionOrganization(clerkOrgId);
         break;
       }
       default:
-        this.logger.log(`Ignoring unhandled webhook event: ${event.type}`);
+        this.logger.warn(`Unhandled webhook event: ${event.type}`);
     }
   }
 }

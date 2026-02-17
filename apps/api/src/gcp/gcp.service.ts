@@ -28,10 +28,6 @@ export class GcpService {
       const projectId = this.generateProjectId(clerkOrgId);
       const folderId = this.configService.get<string>('GCP_PARENT_FOLDER_ID')!;
 
-      this.logger.log(
-        `Creating GCP project: ${projectId} for org: ${clerkOrgId}`,
-      );
-
       await this.prisma.organization.update({
         where: { clerkOrgId },
         data: { gcpStatus: GcpStatus.creating },
@@ -50,10 +46,6 @@ export class GcpService {
       });
 
       const [project] = await operation.promise();
-
-      this.logger.log(
-        `GCP project created successfully: ${project.projectId}`,
-      );
 
       await this.linkBillingAccount(project.projectId!);
       await this.enableBigQueryApi(project.projectId!);
@@ -105,10 +97,6 @@ export class GcpService {
 
       const projectId = organization.gcpProjectId;
 
-      this.logger.log(
-        `Deleting GCP project: ${projectId} for org: ${clerkOrgId}`,
-      );
-
       await this.prisma.organization.update({
         where: { clerkOrgId },
         data: { gcpStatus: GcpStatus.deleting },
@@ -120,9 +108,6 @@ export class GcpService {
 
       await operation.promise();
 
-      this.logger.log(
-        `GCP project deleted successfully: ${projectId}`,
-      );
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -148,30 +133,20 @@ export class GcpService {
   private async linkBillingAccount(projectId: string): Promise<void> {
     const billingAccountId = this.configService.get<string>('GCP_BILLING_ACCOUNT_ID')!;
 
-    this.logger.log(
-      `Linking billing account ${billingAccountId} to project ${projectId}`,
-    );
-
     await this.billingClient.updateProjectBillingInfo({
       name: `projects/${projectId}`,
       projectBillingInfo: {
         billingAccountName: `billingAccounts/${billingAccountId}`,
       },
     });
-
-    this.logger.log(`Billing account linked to project ${projectId}`);
   }
 
   private async enableBigQueryApi(projectId: string): Promise<void> {
-    this.logger.log(`Enabling BigQuery API for project ${projectId}`);
-
     const [operation] = await this.serviceUsageClient.enableService({
       name: `projects/${projectId}/services/bigquery.googleapis.com`,
     });
 
     await operation.promise();
-
-    this.logger.log(`BigQuery API enabled for project ${projectId}`);
   }
 
   private generateProjectId(clerkOrgId: string): string {

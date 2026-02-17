@@ -3,4 +3,5 @@ export interface ClerkUser {
   sessionId: string;
   orgId?: string;
   orgRole?: string;
+  orgSlug?: string;
 }

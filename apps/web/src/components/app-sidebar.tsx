@@ -1,16 +1,23 @@
 import {
   Flame,
   Home,
+  Database,
+  Plug,
+  ChartPie,
+  BotMessageSquare,
 } from "lucide-react"
-import { useLocation } from "react-router-dom"
-import { NavMain } from "@/components/nav-main"
+import { Link, useLocation } from "react-router-dom"
 import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
+  SidebarGroup,
+  SidebarGroupLabel,
   SidebarHeader,
-  SidebarRail,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
 const navItems = [
@@ -19,6 +26,29 @@ const navItems = [
     url: "/home",
     icon: Home,
   },
+  {
+    title: "Reports",
+    url: "/reports",
+    icon: ChartPie,
+  },
+  {
+    title: "AI Chat",
+    url: "/ai-chat",
+    icon: BotMessageSquare,
+  },
+]
+
+const dataManagementItems = [
+  {
+    title: "Workbench",
+    url: "/data-management/workbench",
+    icon: Database,
+  },
+  {
+    title: "Connections",
+    url: "/data-management/connections",
+    icon: Plug,
+  },
 ]
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
@@ -26,7 +56,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader >
+      <SidebarHeader>
         <div className="flex items-center gap-2 p-2 transition-all group-data-[collapsible=icon]:p-0">
           <div className="flex size-8 items-center justify-center rounded-lg bg-red-500 text-white shrink-0">
             <Flame className="size-4" strokeWidth={3} />
@@ -35,12 +65,39 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </div>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navItems} currentPath={pathname} />
+        <SidebarGroup>
+          <SidebarMenu>
+            {navItems.map((item) => (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton asChild tooltip={item.title} isActive={pathname === item.url}>
+                  <Link to={item.url}>
+                    {item.icon && <item.icon />}
+                    <span>{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Data Management</SidebarGroupLabel>
+          <SidebarMenu>
+            {dataManagementItems.map((item) => (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton asChild tooltip={item.title} isActive={pathname === item.url}>
+                  <Link to={item.url}>
+                    {item.icon && <item.icon />}
+                    <span>{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
         <NavUser />
       </SidebarFooter>
-      <SidebarRail />
     </Sidebar>
   )
 }

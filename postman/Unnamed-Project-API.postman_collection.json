@@ -1,0 +1,179 @@
+{
+  "info": {
+    "name": "Unnamed Project API",
+    "_postman_id": "unnamed-project-api",
+    "description": "API collection for Unnamed Project - NestJS backend with Clerk authentication",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Public endpoint - Returns the health status of the API."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "me"]
+            },
+            "description": "Protected endpoint - Returns the authenticated user's information from Clerk.\n\nResponse includes:\n- userId\n- sessionId\n- orgId (optional)\n- orgRole (optional)\n- orgSlug (optional)\n\nRequires a valid Clerk Bearer token in the Authorization header."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"userId\": \"user_2abc123\",\n  \"sessionId\": \"sess_2abc123\",\n  \"orgId\": \"org_2abc123\",\n  \"orgRole\": \"admin\",\n  \"orgSlug\": \"my-org\"\n}",
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has userId', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('userId');",
+                  "});",
+                  "",
+                  "pm.test('Response has sessionId', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('sessionId');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Webhooks",
+      "item": [
+        {
+          "name": "Clerk Webhook",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "svix-id",
+                "value": "{{svix_id}}",
+                "description": "Svix webhook ID"
+              },
+              {
+                "key": "svix-timestamp",
+                "value": "{{svix_timestamp}}",
+                "description": "Svix webhook timestamp"
+              },
+              {
+                "key": "svix-signature",
+                "value": "{{svix_signature}}",
+                "description": "Svix webhook signature"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"organization.created\",\n  \"data\": {\n    \"id\": \"org_2abc123\",\n    \"name\": \"My Organization\",\n    \"slug\": \"my-org\",\n    \"created_at\": 1700000000000\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/webhooks/clerk",
+              "host": ["{{base_url}}"],
+              "path": ["webhooks", "clerk"]
+            },
+            "description": "Public endpoint - Receives Clerk webhook events.\n\nSupported events:\n- organization.created: Provisions a new organization\n- organization.deleted: Deprovisions an organization\n\nRequires valid Svix headers for webhook signature verification."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"success\": true\n}",
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has success true', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.success).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -16,14 +16,24 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar'
 
-const pageTitles: Record<string, string> = {
-  '/home': 'Home',
+const segmentTitles: Record<string, string> = {
+  'home': 'Home',
+  'reports': 'Reports',
+  'ai-chat': 'AI Chat',
+  'data-management': 'Data Management',
+  'workbench': 'Workbench',
+  'connections': 'Connections',
 }
 
 export default function AppLayout() {
   const { pathname } = useLocation()
   const { organization } = useOrganization()
-  const pageTitle = pageTitles[pathname] ?? pathname.split('/').pop() ?? ''
+  const segments = pathname.split('/').filter(Boolean)
+  const breadcrumbs = segments.map((segment, index) => ({
+    title: segmentTitles[segment] ?? segment.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+    url: '/' + segments.slice(0, index + 1).join('/'),
+    isLast: index === segments.length - 1,
+  }))
 
   return (
     <SidebarProvider>
@@ -46,9 +56,14 @@ export default function AppLayout() {
                     <BreadcrumbSeparator />
                   </>
                 )}
-                <BreadcrumbItem>
-                  <BreadcrumbPage>{pageTitle}</BreadcrumbPage>
-                </BreadcrumbItem>
+                {breadcrumbs.map((crumb) => (
+                  <span key={crumb.url} className="contents">
+                    <BreadcrumbItem>
+                      <BreadcrumbPage>{crumb.title}</BreadcrumbPage>
+                    </BreadcrumbItem>
+                    {!crumb.isLast && <BreadcrumbSeparator />}
+                  </span>
+                ))}
               </BreadcrumbList>
             </Breadcrumb>
           </div>
