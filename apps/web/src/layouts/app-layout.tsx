@@ -21,7 +21,7 @@ const segmentTitles: Record<string, string> = {
   'reports': 'Reports',
   'ai-chat': 'AI Chat',
   'data-management': 'Data Management',
-  'workbench': 'Workbench',
+  'data-studio': 'Data Studio',
   'connections': 'Connections',
 }
 

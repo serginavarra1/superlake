@@ -21,3 +21,13 @@ export interface ApiError {
   statusCode: number
   error?: string
 }
+
+export interface TableInfo {
+  tableId: string
+  type: string
+}
+
+export interface DatasetInfo {
+  datasetId: string
+  tables: TableInfo[]
+}

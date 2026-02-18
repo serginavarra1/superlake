@@ -99,6 +99,70 @@
       ]
     },
     {
+      "name": "Datasets",
+      "item": [
+        {
+          "name": "List Datasets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/datasets",
+              "host": ["{{base_url}}"],
+              "path": ["datasets"]
+            },
+            "description": "Protected endpoint - Returns all BigQuery datasets and their tables for the authenticated user's organization.\n\nRequires a valid Clerk Bearer token with an active organization.\nThe organization's GCP project must be in 'active' status."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": [\n    {\n      \"datasetId\": \"shopify_raw\",\n      \"tables\": [\n        { \"tableId\": \"orders\", \"type\": \"TABLE\" },\n        { \"tableId\": \"customers\", \"type\": \"TABLE\" }\n      ]\n    },\n    {\n      \"datasetId\": \"stripe_raw\",\n      \"tables\": [\n        { \"tableId\": \"payments\", \"type\": \"TABLE\" },\n        { \"tableId\": \"daily_summary\", \"type\": \"VIEW\" }\n      ]\n    }\n  ],\n  \"statusCode\": 200\n}",
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response data is an array', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Each dataset has datasetId and tables', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    jsonData.data.forEach(function (dataset) {",
+                  "        pm.expect(dataset).to.have.property('datasetId');",
+                  "        pm.expect(dataset).to.have.property('tables');",
+                  "        pm.expect(dataset.tables).to.be.an('array');",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test('Each table has tableId and type', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    jsonData.data.forEach(function (dataset) {",
+                  "        dataset.tables.forEach(function (table) {",
+                  "            pm.expect(table).to.have.property('tableId');",
+                  "            pm.expect(table).to.have.property('type');",
+                  "        });",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Webhooks",
       "item": [
         {

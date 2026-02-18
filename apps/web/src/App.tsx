@@ -13,7 +13,7 @@ import SignUpPage from './pages/sign-up'
 import HomePage from './pages/home'
 import ReportsPage from './pages/reports'
 import AIChatPage from './pages/ai-chat'
-import WorkbenchPage from './pages/workbench'
+import DataStudioPage from './pages/data-studio'
 import ConnectionsPage from './pages/connections'
 
 function App() {
@@ -40,7 +40,7 @@ function App() {
                   <Route path="/home" element={<HomePage />} />
                   <Route path="/reports" element={<ReportsPage />} />
                   <Route path="/ai-chat" element={<AIChatPage />} />
-                  <Route path="/data-management/workbench" element={<WorkbenchPage />} />
+                  <Route path="/data-management/data-studio" element={<DataStudioPage />} />
                   <Route path="/data-management/connections" element={<ConnectionsPage />} />
                 </Route>
               </Route>

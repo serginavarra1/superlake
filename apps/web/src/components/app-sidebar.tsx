@@ -1,10 +1,10 @@
 import {
   Flame,
   Home,
-  Database,
   Plug,
   ChartPie,
   BotMessageSquare,
+  DatabaseSearch,
 } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import { NavUser } from "@/components/nav-user"
@@ -40,9 +40,9 @@ const navItems = [
 
 const dataManagementItems = [
   {
-    title: "Workbench",
-    url: "/data-management/workbench",
-    icon: Database,
+    title: "Data Studio",
+    url: "/data-management/data-studio",
+    icon: DatabaseSearch,
   },
   {
     title: "Connections",

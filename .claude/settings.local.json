@@ -5,7 +5,9 @@
       "Bash(npx tsc:*)",
       "Bash(grep:*)",
       "Bash(pnpm add:*)",
-      "Bash(pnpm prisma:generate:*)"
+      "Bash(pnpm prisma:generate:*)",
+      "Read(//c/Users/sergi/Desktop/**)",
+      "Bash(/bin/sh -c 'echo $PATH')"
     ]
   }
 }
