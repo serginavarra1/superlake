@@ -102,6 +102,100 @@
       "name": "Datasets",
       "item": [
         {
+          "name": "Get Table Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/datasets/{{dataset_id}}/tables/{{table_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["datasets", "{{dataset_id}}", "tables", "{{table_id}}"]
+            },
+            "description": "Protected endpoint - Returns detailed information for a specific BigQuery table.\n\nPath variables:\n- dataset_id: The BigQuery dataset ID (e.g. shopify_raw)\n- table_id: The BigQuery table ID (e.g. orders)\n\nResponse includes:\n- tableId, datasetId, type (TABLE | VIEW)\n- description\n- schema: array of fields with name, type, mode, description, nested fields\n- rowCount, sizeBytes\n- createdAt, lastModifiedAt (ISO 8601)\n- location (e.g. US)\n- partitioning (optional): type, field, requireFilter\n- clustering (optional): fields array\n- viewQuery (optional, VIEW type only)\n\nRequires a valid Clerk Bearer token with an active organization."
+          },
+          "response": [
+            {
+              "name": "Success - TABLE",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"tableId\": \"orders\",\n    \"datasetId\": \"shopify_raw\",\n    \"type\": \"TABLE\",\n    \"description\": \"Raw Shopify orders\",\n    \"schema\": [\n      { \"name\": \"id\", \"type\": \"INTEGER\", \"mode\": \"REQUIRED\", \"description\": \"Order ID\" },\n      { \"name\": \"customer_id\", \"type\": \"INTEGER\", \"mode\": \"NULLABLE\", \"description\": null },\n      { \"name\": \"total_price\", \"type\": \"FLOAT\", \"mode\": \"NULLABLE\", \"description\": null },\n      { \"name\": \"created_at\", \"type\": \"TIMESTAMP\", \"mode\": \"NULLABLE\", \"description\": null },\n      { \"name\": \"tags\", \"type\": \"STRING\", \"mode\": \"REPEATED\", \"description\": null }\n    ],\n    \"rowCount\": 12345,\n    \"sizeBytes\": 67890,\n    \"createdAt\": \"2024-01-01T00:00:00.000Z\",\n    \"lastModifiedAt\": \"2024-06-01T12:00:00.000Z\",\n    \"location\": \"US\",\n    \"partitioning\": { \"type\": \"DAY\", \"field\": \"created_at\", \"requireFilter\": false },\n    \"clustering\": { \"fields\": [\"customer_id\"] },\n    \"viewQuery\": null\n  },\n  \"statusCode\": 200\n}",
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "name": "Success - VIEW",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": {\n    \"tableId\": \"daily_summary\",\n    \"datasetId\": \"shopify_raw\",\n    \"type\": \"VIEW\",\n    \"description\": \"Daily order totals\",\n    \"schema\": [\n      { \"name\": \"date\", \"type\": \"DATE\", \"mode\": \"NULLABLE\", \"description\": null },\n      { \"name\": \"total_revenue\", \"type\": \"FLOAT\", \"mode\": \"NULLABLE\", \"description\": null }\n    ],\n    \"rowCount\": null,\n    \"sizeBytes\": null,\n    \"createdAt\": \"2024-03-01T00:00:00.000Z\",\n    \"lastModifiedAt\": \"2024-06-01T12:00:00.000Z\",\n    \"location\": \"US\",\n    \"partitioning\": null,\n    \"clustering\": null,\n    \"viewQuery\": \"SELECT DATE(created_at) as date, SUM(total_price) as total_revenue FROM shopify_raw.orders GROUP BY 1\"\n  },\n  \"statusCode\": 200\n}",
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "name": "Not Found",
+              "status": "Not Found",
+              "code": 404,
+              "body": "{\n  \"statusCode\": 404,\n  \"message\": \"Organization not found\",\n  \"timestamp\": \"2024-06-01T12:00:00.000Z\",\n  \"path\": \"/api/datasets/shopify_raw/tables/orders\"\n}",
+              "_postman_previewlanguage": "json"
+            },
+            {
+              "name": "GCP Not Active",
+              "status": "Forbidden",
+              "code": 403,
+              "body": "{\n  \"statusCode\": 403,\n  \"message\": \"Organization GCP project is not active (status: creating)\",\n  \"timestamp\": \"2024-06-01T12:00:00.000Z\",\n  \"path\": \"/api/datasets/shopify_raw/tables/orders\"\n}",
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has data object', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.be.an('object');",
+                  "});",
+                  "",
+                  "pm.test('Table has required fields', function () {",
+                  "    var table = pm.response.json().data;",
+                  "    pm.expect(table).to.have.property('tableId');",
+                  "    pm.expect(table).to.have.property('datasetId');",
+                  "    pm.expect(table).to.have.property('type');",
+                  "    pm.expect(table).to.have.property('schema');",
+                  "    pm.expect(table.schema).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('tableId matches path variable', function () {",
+                  "    var table = pm.response.json().data;",
+                  "    pm.expect(table.tableId).to.eql(pm.variables.get('table_id'));",
+                  "});",
+                  "",
+                  "pm.test('datasetId matches path variable', function () {",
+                  "    var table = pm.response.json().data;",
+                  "    pm.expect(table.datasetId).to.eql(pm.variables.get('dataset_id'));",
+                  "});",
+                  "",
+                  "pm.test('Each schema field has name, type and mode', function () {",
+                  "    var table = pm.response.json().data;",
+                  "    table.schema.forEach(function (field) {",
+                  "        pm.expect(field).to.have.property('name');",
+                  "        pm.expect(field).to.have.property('type');",
+                  "        pm.expect(field).to.have.property('mode');",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test('type is TABLE or VIEW', function () {",
+                  "    var table = pm.response.json().data;",
+                  "    pm.expect(['TABLE', 'VIEW', 'EXTERNAL', 'MATERIALIZED_VIEW']).to.include(table.type);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "List Datasets",
           "request": {
             "method": "GET",
