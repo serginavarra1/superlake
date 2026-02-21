@@ -10,6 +10,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { GcpModule } from './gcp/gcp.module';
 import { DatasetsModule } from './datasets/datasets.module';
+import { ReportsModule } from './reports/reports.module';
 import { validate } from './config/env.validation';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
@@ -27,6 +28,7 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
     GcpModule,
     OrganizationsModule,
     DatasetsModule,
+    ReportsModule,
     WebhooksModule,
   ],
   controllers: [AppController],
