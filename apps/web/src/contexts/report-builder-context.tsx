@@ -5,7 +5,7 @@ export interface SelectedTable {
   tableId: string
 }
 
-export type OperationType = "sum" | "avg" | "count" | "min" | "max"
+export type OperationType = "sum" | "avg" | "count" | "count_distinct" | "min" | "max"
 
 export interface Metric {
   id: string
@@ -23,6 +23,13 @@ export interface OrderByConfig {
   direction: OrderByDirection
 }
 
+export type VisualizationType = "bar" | "line" | "pie" | "single_metric"
+
+export interface VisualizationConfig {
+  type: VisualizationType
+  stacked: boolean
+}
+
 export interface ReportConfig {
   dataSource: SelectedTable | null
   dimension: string | null
@@ -32,6 +39,7 @@ export interface ReportConfig {
   groupByIncludeEmpty: boolean
   metrics: Metric[]
   orderBy: OrderByConfig | null
+  visualization: VisualizationConfig | null
 }
 
 const INITIAL_CONFIG: ReportConfig = {
@@ -43,6 +51,7 @@ const INITIAL_CONFIG: ReportConfig = {
   groupByIncludeEmpty: false,
   metrics: [],
   orderBy: null,
+  visualization: null,
 }
 
 type Action =
@@ -56,6 +65,7 @@ type Action =
   | { type: "UPDATE_METRIC"; payload: { id: string; updates: Partial<Omit<Metric, "id">> } }
   | { type: "REMOVE_METRIC"; payload: string } // metric id
   | { type: "SET_ORDER_BY"; payload: OrderByConfig | null }
+  | { type: "SET_VISUALIZATION"; payload: VisualizationConfig | null }
 
 function reducer(state: ReportConfig, action: Action): ReportConfig {
   switch (action.type) {
@@ -110,6 +120,8 @@ function reducer(state: ReportConfig, action: Action): ReportConfig {
     }
     case "SET_ORDER_BY":
       return { ...state, orderBy: action.payload }
+    case "SET_VISUALIZATION":
+      return { ...state, visualization: action.payload }
   }
 }
 
@@ -124,6 +136,7 @@ export interface ReportActions {
   updateMetric: (id: string, updates: Partial<Omit<Metric, "id">>) => void
   removeMetric: (id: string) => void
   setOrderBy: (orderBy: OrderByConfig | null) => void
+  setVisualization: (config: VisualizationConfig | null) => void
 }
 
 // Split into two contexts so components that only need actions don't re-render on config changes.
@@ -146,6 +159,7 @@ export function ReportBuilderProvider({ children }: { children: React.ReactNode 
       updateMetric: (id, updates) => dispatch({ type: "UPDATE_METRIC", payload: { id, updates } }),
       removeMetric: (id) => dispatch({ type: "REMOVE_METRIC", payload: id }),
       setOrderBy: (orderBy) => dispatch({ type: "SET_ORDER_BY", payload: orderBy }),
+      setVisualization: (config) => dispatch({ type: "SET_VISUALIZATION", payload: config }),
     }),
     [], // eslint-disable-line react-hooks/exhaustive-deps — dispatch is guaranteed stable
   )

@@ -83,7 +83,9 @@ function buildQuery(config: ReportConfigDto): string {
   // Metrics
   metrics.forEach((m: MetricDto, i: number) => {
     const col = m.column !== null ? `\`${m.column}\`` : '*';
-    const expr = `${m.operation.toUpperCase()}(${col})`;
+    const expr = m.operation === 'count_distinct'
+      ? `COUNT(DISTINCT ${col})`
+      : `${m.operation.toUpperCase()}(${col})`;
     selectParts.push(`${expr} AS metric_${i}`);
   });
 

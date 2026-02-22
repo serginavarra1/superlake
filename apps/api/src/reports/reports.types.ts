@@ -24,7 +24,7 @@ export class MetricDto {
   @IsNotEmpty()
   id!: string;
 
-  @IsIn(['sum', 'avg', 'count', 'min', 'max'])
+  @IsIn(['sum', 'avg', 'count', 'count_distinct', 'min', 'max'])
   operation!: string;
 
   @IsOptional()
