@@ -43,7 +43,7 @@ export function DimensionSection() {
           triggerClassName="w-full"
           onSelect={(col) => {
             actions.setDimension(col)
-            if (col && isDateColumn(schema, col)) actions.setDimensionGranularity("date")
+            if (col && isDateColumn(schema, col)) actions.setDimensionGranularity(["day", "month", "year"])
           }}
         />
         {isDimDate && (
@@ -59,7 +59,7 @@ export function DimensionSection() {
           triggerClassName="w-full"
           onSelect={(col) => {
             actions.setGroupBy(col)
-            if (col && isDateColumn(schema, col)) actions.setGroupByGranularity("date")
+            if (col && isDateColumn(schema, col)) actions.setGroupByGranularity(["day", "month", "year"])
           }}
         />
         {isGroupByDate && (

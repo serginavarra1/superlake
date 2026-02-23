@@ -36,15 +36,16 @@ function buildQueryPayload(config: ReportConfig) {
 }
 
 export function useReportQuery(config: ReportConfig) {
-  const debouncedConfig = useDebounce(config, 400)
+  const payload = buildQueryPayload(config)
+  const debouncedPayload = useDebounce(payload, 400)
 
   return useQuery({
-    queryKey: ['report-query', debouncedConfig],
+    queryKey: ['report-query', debouncedPayload],
     queryFn: () =>
       apiFetch<{ data: Record<string, unknown>[] }>('/reports/query', {
         method: 'POST',
-        body: JSON.stringify(buildQueryPayload(debouncedConfig)),
+        body: JSON.stringify(debouncedPayload),
       }).then((res) => res.data),
-    enabled: isQueryable(debouncedConfig),
+    enabled: isQueryable(config),
   })
 }

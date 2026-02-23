@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  ArrayMinSize,
   IsArray,
   IsBoolean,
   IsIn,
@@ -52,16 +53,20 @@ export class ReportConfigDto {
   dimension!: string | null;
 
   @IsOptional()
-  @IsIn(['date', 'month_year', 'year'])
-  dimensionGranularity!: string | null;
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsIn(['day', 'month', 'year'], { each: true })
+  dimensionGranularity!: string[] | null;
 
   @IsOptional()
   @IsString()
   groupBy!: string | null;
 
   @IsOptional()
-  @IsIn(['date', 'month_year', 'year'])
-  groupByGranularity!: string | null;
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsIn(['day', 'month', 'year'], { each: true })
+  groupByGranularity!: string[] | null;
 
   @IsBoolean()
   groupByIncludeEmpty!: boolean;

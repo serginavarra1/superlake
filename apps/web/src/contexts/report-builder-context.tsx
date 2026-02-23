@@ -13,7 +13,8 @@ export interface Metric {
   column: string | null
 }
 
-export type DimensionGranularity = "date" | "month_year" | "year"
+export type DatePart = "day" | "month" | "year"
+export type DimensionGranularity = DatePart[]
 
 export type OrderByDirection = "asc" | "desc"
 
@@ -31,6 +32,7 @@ export interface VisualizationConfig {
 }
 
 export interface ReportConfig {
+  title: string
   dataSource: SelectedTable | null
   dimension: string | null
   dimensionGranularity: DimensionGranularity | null
@@ -43,6 +45,7 @@ export interface ReportConfig {
 }
 
 const INITIAL_CONFIG: ReportConfig = {
+  title: "",
   dataSource: null,
   dimension: null,
   dimensionGranularity: null,
@@ -55,6 +58,7 @@ const INITIAL_CONFIG: ReportConfig = {
 }
 
 type Action =
+  | { type: "SET_TITLE"; payload: string }
   | { type: "SET_DATA_SOURCE"; payload: SelectedTable | null }
   | { type: "SET_DIMENSION"; payload: string | null }
   | { type: "SET_DIMENSION_GRANULARITY"; payload: DimensionGranularity | null }
@@ -69,6 +73,8 @@ type Action =
 
 function reducer(state: ReportConfig, action: Action): ReportConfig {
   switch (action.type) {
+    case "SET_TITLE":
+      return { ...state, title: action.payload }
     case "SET_DATA_SOURCE":
       return { ...INITIAL_CONFIG, dataSource: action.payload }
     case "SET_DIMENSION": {
@@ -76,12 +82,17 @@ function reducer(state: ReportConfig, action: Action): ReportConfig {
       const orderByInvalidated =
         clearingDimension &&
         (state.orderBy?.target === "dimension" || state.orderBy?.target === "group_by")
+      const defaultOrderBy =
+        !clearingDimension && state.orderBy === null
+          ? { target: "dimension", direction: "asc" as OrderByDirection }
+          : undefined
       return {
         ...state,
         dimension: action.payload,
         dimensionGranularity: null,
         ...(clearingDimension ? { groupBy: null, groupByGranularity: null, groupByIncludeEmpty: false } : {}),
         ...(orderByInvalidated ? { orderBy: null } : {}),
+        ...(defaultOrderBy ? { orderBy: defaultOrderBy } : {}),
       }
     }
     case "SET_DIMENSION_GRANULARITY":
@@ -126,6 +137,7 @@ function reducer(state: ReportConfig, action: Action): ReportConfig {
 }
 
 export interface ReportActions {
+  setTitle: (title: string) => void
   setDataSource: (dataSource: SelectedTable | null) => void
   setDimension: (column: string | null) => void
   setDimensionGranularity: (granularity: DimensionGranularity | null) => void
@@ -149,6 +161,7 @@ export function ReportBuilderProvider({ children }: { children: React.ReactNode 
   // Actions are stable — dispatch never changes, so this memo has no deps that ever change.
   const actions = React.useMemo<ReportActions>(
     () => ({
+      setTitle: (title) => dispatch({ type: "SET_TITLE", payload: title }),
       setDataSource: (dataSource) => dispatch({ type: "SET_DATA_SOURCE", payload: dataSource }),
       setDimension: (column) => dispatch({ type: "SET_DIMENSION", payload: column }),
       setDimensionGranularity: (granularity) => dispatch({ type: "SET_DIMENSION_GRANULARITY", payload: granularity }),

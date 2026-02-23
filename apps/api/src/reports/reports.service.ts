@@ -27,18 +27,23 @@ function assertColumn(value: string): void {
   }
 }
 
-function granularityExpr(column: string, granularity: string | null): string {
+function granularityExpr(column: string, granularity: string[] | null): string {
   const col = `\`${column}\``;
-  switch (granularity) {
-    case 'date':
-      return `DATE(${col})`;
-    case 'month_year':
-      return `DATE_TRUNC(${col}, MONTH)`;
-    case 'year':
-      return `DATE_TRUNC(${col}, YEAR)`;
-    default:
-      return col;
-  }
+  if (!granularity || granularity.length === 0) return col;
+
+  const hasDay   = granularity.includes('day');
+  const hasMonth = granularity.includes('month');
+  const hasYear  = granularity.includes('year');
+
+  if (hasDay && hasMonth && hasYear)  return `DATE(${col})`;
+  if (!hasDay && hasMonth && hasYear) return `DATE_TRUNC(${col}, MONTH)`;
+  if (!hasDay && !hasMonth && hasYear) return `DATE_TRUNC(${col}, YEAR)`;
+  if (!hasDay && hasMonth && !hasYear) return `EXTRACT(MONTH FROM DATE(${col}))`;
+  if (hasDay && !hasMonth && !hasYear) return `EXTRACT(DAY FROM DATE(${col}))`;
+  if (hasDay && hasMonth && !hasYear)  return `FORMAT_DATE('%m-%d', DATE(${col}))`;
+  if (hasDay && !hasMonth && hasYear)  return `FORMAT_DATE('%Y-%d', DATE(${col}))`;
+
+  return `DATE(${col})`;
 }
 
 function buildQuery(config: ReportConfigDto): string {
