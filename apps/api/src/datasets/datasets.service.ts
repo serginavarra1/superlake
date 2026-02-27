@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   Logger,
   NotFoundException,
@@ -113,7 +114,53 @@ export class DatasetsService {
       viewQuery: metadata.view?.query,
     };
   }
+
+  async getDistinctValues(
+    clerkOrgId: string,
+    datasetId: string,
+    tableId: string,
+    column: string,
+  ): Promise<(string | number | null)[]> {
+    const organization =
+      await this.organizationsService.getByClerkOrgId(clerkOrgId);
+
+    if (!organization) {
+      throw new NotFoundException('Organization not found');
+    }
+
+    if (organization.gcpStatus !== GcpStatus.active) {
+      throw new ForbiddenException(
+        `Organization GCP project is not active (status: ${organization.gcpStatus})`,
+      );
+    }
+
+    if (!SAFE_IDENTIFIER_RE.test(datasetId)) {
+      throw new BadRequestException(`Invalid datasetId: "${datasetId}"`);
+    }
+    if (!SAFE_IDENTIFIER_RE.test(tableId)) {
+      throw new BadRequestException(`Invalid tableId: "${tableId}"`);
+    }
+    if (!SAFE_COLUMN_RE.test(column)) {
+      throw new BadRequestException(`Invalid column name: "${column}"`);
+    }
+
+    const bigquery = new BigQuery({ projectId: organization.gcpProjectId! });
+    const query = `SELECT DISTINCT \`${column}\` FROM \`${datasetId}.${tableId}\` ORDER BY 1 LIMIT 100`;
+
+    const [rows] = await bigquery.query({ query });
+
+    return rows.map((row: Record<string, unknown>) => {
+      const val = row[column];
+      if (val === null || val === undefined) return null;
+      return val as string | number;
+    });
+  }
 }
+
+// Unicode letters, digits, underscore — safe for backtick-quoted column names
+const SAFE_COLUMN_RE = /^[\p{L}\p{N}_]+$/u;
+// Unicode letters, digits, underscore, hyphens, spaces — safe for backtick-quoted dataset/table identifiers
+const SAFE_IDENTIFIER_RE = /^[\p{L}\p{N}_ -]+$/u;
 
 function mapFields(fields: any[]): SchemaField[] {
   return fields.map((f) => ({

@@ -152,7 +152,7 @@ export function VisualizationSelector() {
                 <span className="truncate">
                   {currentOpt.label}
                   {currentOpt.type === "line" && hasGroupBy ? " (Multiline)" : ""}
-                  {(currentOpt.type === "bar" || currentOpt.type === "line") && visualization?.stacked ? " · Stacked" : ""}
+                  {currentOpt.type === "bar" && visualization?.stacked ? " · Stacked" : ""}
                 </span>
               </span>
             ) : (
@@ -190,7 +190,7 @@ export function VisualizationSelector() {
         </PopoverContent>
       </Popover>
 
-      {(visualization?.type === "bar" || visualization?.type === "line") && canStack && (
+      {visualization?.type === "bar" && canStack && (
         <div className="mt-2 flex items-center gap-2">
           <Switch
             id="vis-stacked"

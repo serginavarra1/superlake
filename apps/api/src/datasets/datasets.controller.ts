@@ -20,4 +20,14 @@ export class DatasetsController {
   ) {
     return this.datasetsService.getTableDetails(user.orgId!, datasetId, tableId);
   }
+
+  @Get(':datasetId/tables/:tableId/columns/:column/distinct-values')
+  async getDistinctValues(
+    @CurrentUser() user: ClerkUser,
+    @Param('datasetId') datasetId: string,
+    @Param('tableId') tableId: string,
+    @Param('column') column: string,
+  ) {
+    return this.datasetsService.getDistinctValues(user.orgId!, datasetId, tableId, column);
+  }
 }

@@ -122,6 +122,12 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.90.21
         version: 5.90.21(react@19.2.4)
+      ag-charts-community:
+        specifier: ^13.1.0
+        version: 13.1.0
+      ag-charts-react:
+        specifier: ^13.1.0
+        version: 13.1.0(react@19.2.4)
       ag-grid-community:
         specifier: ^35.1.0
         version: 35.1.0
@@ -137,6 +143,9 @@ importers:
       cmdk:
         specifier: ^1.1.1
         version: 1.1.1(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      date-fns:
+        specifier: ^4.1.0
+        version: 4.1.0
       lucide-react:
         specifier: ^0.564.0
         version: 0.564.0(react@19.2.4)
@@ -146,6 +155,9 @@ importers:
       react:
         specifier: ^19.2.0
         version: 19.2.4
+      react-day-picker:
+        specifier: ^9.13.2
+        version: 9.13.2(react@19.2.4)
       react-dom:
         specifier: ^19.2.0
         version: 19.2.4(react@19.2.4)
@@ -529,6 +541,9 @@ packages:
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
     engines: {node: '>=12'}
+
+  '@date-fns/tz@1.4.1':
+    resolution: {integrity: sha512-P5LUNhtbj6YfI3iJjw5EL9eUAG6OitD0W3fWQcpQjDRc/QIsL0tRNuO1PcDvPccWL1fSTXXdE1ds+l95DV/OFA==}
 
   '@dotenvx/dotenvx@1.52.0':
     resolution: {integrity: sha512-CaQcc8JvtzQhUSm9877b6V4Tb7HCotkcyud9X2YwdqtQKwgljkMRwU96fVYKnzN3V0Hj74oP7Es+vZ0mS+Aa1w==}
@@ -2480,6 +2495,20 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
+  ag-charts-community@13.1.0:
+    resolution: {integrity: sha512-w+uFTjxlAoTq1+8tgUORtB/zr9jm38ibXzbbWnkBP9Dep9yahi5a1jZL7yExAX35uq3g9QtjTh0Oj/QPDBQ9Ew==}
+
+  ag-charts-core@13.1.0:
+    resolution: {integrity: sha512-mLHJZ8oU5CPeLRURescdISCtMsiiA/m4d1iBr6aQBEgiTVogRMGpFpsYNtQiYtoW2sRh+62I9sN8fhC3JQjX/g==}
+
+  ag-charts-locale@13.1.0:
+    resolution: {integrity: sha512-mPgJnVsOI4Cf17CAlRh8BvLz19e165sdQJeUXNaB7M+DPB+pxODOcfx4oqZlR4Wc8Zu++TGb/2ueHa/aeV2qeQ==}
+
+  ag-charts-react@13.1.0:
+    resolution: {integrity: sha512-Ke+Ra/k+Yr0OK2JY0YA4+P50yLydRP+8oZzHYX1ulkbTTzFmMkSFZJVXtgCkBsTxq7S1P+lymEG/RWg+eIcCmQ==}
+    peerDependencies:
+      react: ^18.0.0 || ^19.0.0
+
   ag-charts-types@13.1.0:
     resolution: {integrity: sha512-DytRM3CXli+Y013SC1Mr8lQBrhVTACK+11ilDHOhwUM0sRpmGuR51XFGcBKOliW1Vas1AycP31Cm3Pp0jx3hqw==}
 
@@ -2940,6 +2969,12 @@ packages:
   data-uri-to-buffer@4.0.1:
     resolution: {integrity: sha512-0R9ikRb668HB7QDxT1vkpuUBtqc53YyAwMwGeUFKRojY/NWKvdZ+9UYtRfGmhqNbRkTSVpMbmyhXipFFv2cb/A==}
     engines: {node: '>= 12'}
+
+  date-fns-jalali@4.1.0-0:
+    resolution: {integrity: sha512-hTIP/z+t+qKwBDcmmsnmjWTduxCg+5KfdqWQvb2X/8C9+knYY6epN/pfxdDuyVlSVeFz0sM5eEfwIUQ70U4ckg==}
+
+  date-fns@4.1.0:
+    resolution: {integrity: sha512-Ukq0owbQXxa/U3EGtsdVBkR1w7KOQ5gIBqdH2hkvknzZPYvBxb/aa6E8L7tmjFtkwZBu3UXBbjIgPo/Ez4xaNg==}
 
   debug@4.4.3:
     resolution: {integrity: sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==}
@@ -4532,6 +4567,12 @@ packages:
   rc9@2.1.2:
     resolution: {integrity: sha512-btXCnMmRIBINM2LDZoEmOogIZU7Qe7zn4BpomSKZ/ykbLObuBdvG+mFq11DL6fjH1DRwHhrlgtYWG96bJiC7Cg==}
 
+  react-day-picker@9.13.2:
+    resolution: {integrity: sha512-IMPiXfXVIAuR5Yk58DDPBC8QKClrhdXV+Tr/alBrwrHUw0qDDYB1m5zPNuTnnPIr/gmJ4ChMxmtqPdxm8+R4Eg==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      react: '>=16.8.0'
+
   react-dom@19.2.4:
     resolution: {integrity: sha512-AXJdLo8kgMbimY95O2aKQqsz2iWi9jMgKJhRBAxECE4IFxfcazB2LmzloIoibJI3C12IlY20+KFaLv+71bUJeQ==}
     peerDependencies:
@@ -5775,6 +5816,8 @@ snapshots:
   '@cspotcode/source-map-support@0.8.1':
     dependencies:
       '@jridgewell/trace-mapping': 0.3.9
+
+  '@date-fns/tz@1.4.1': {}
 
   '@dotenvx/dotenvx@1.52.0':
     dependencies:
@@ -7855,6 +7898,23 @@ snapshots:
 
   acorn@8.15.0: {}
 
+  ag-charts-community@13.1.0:
+    dependencies:
+      ag-charts-core: 13.1.0
+      ag-charts-locale: 13.1.0
+      ag-charts-types: 13.1.0
+
+  ag-charts-core@13.1.0:
+    dependencies:
+      ag-charts-types: 13.1.0
+
+  ag-charts-locale@13.1.0: {}
+
+  ag-charts-react@13.1.0(react@19.2.4):
+    dependencies:
+      ag-charts-community: 13.1.0
+      react: 19.2.4
+
   ag-charts-types@13.1.0: {}
 
   ag-grid-community@35.1.0:
@@ -8317,6 +8377,10 @@ snapshots:
   csstype@3.2.3: {}
 
   data-uri-to-buffer@4.0.1: {}
+
+  date-fns-jalali@4.1.0-0: {}
+
+  date-fns@4.1.0: {}
 
   debug@4.4.3:
     dependencies:
@@ -10150,6 +10214,13 @@ snapshots:
     dependencies:
       defu: 6.1.4
       destr: 2.0.5
+
+  react-day-picker@9.13.2(react@19.2.4):
+    dependencies:
+      '@date-fns/tz': 1.4.1
+      date-fns: 4.1.0
+      date-fns-jalali: 4.1.0-0
+      react: 19.2.4
 
   react-dom@19.2.4(react@19.2.4):
     dependencies:

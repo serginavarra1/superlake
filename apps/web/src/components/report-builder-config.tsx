@@ -1,4 +1,5 @@
 import { DataSourceSection } from "@/components/data-source-section"
+import { FilterSection } from "@/components/filter-section"
 import { DimensionSection } from "@/components/dimension-section"
 import { MetricsSection } from "@/components/metrics-section"
 import { OrderBySection } from "@/components/order-by-section"
@@ -24,6 +25,7 @@ export function ReportBuilderConfig() {
           />
         </div>
         <DataSourceSection />
+        <FilterSection />
         <div className="px-4 py-2"><Separator /></div>
         <DimensionSection />
         <MetricsSection />

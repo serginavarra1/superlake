@@ -27,6 +27,13 @@ function assertColumn(value: string): void {
   }
 }
 
+// Try to parse a string value as a number so BigQuery receives the correct type
+// when comparing against numeric columns. Falls back to the original string.
+function coerceScalar(v: string): string | number {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : v;
+}
+
 function granularityExpr(column: string, granularity: string[] | null): string {
   const col = `\`${column}\``;
   if (!granularity || granularity.length === 0) return col;
@@ -46,7 +53,13 @@ function granularityExpr(column: string, granularity: string[] | null): string {
   return `DATE(${col})`;
 }
 
-function buildQuery(config: ReportConfigDto): string {
+interface QueryPlan {
+  sql: string;
+  params: Record<string, unknown>;
+  types: Record<string, string | string[]>;
+}
+
+function buildQuery(config: ReportConfigDto): QueryPlan {
   const {
     dataSource,
     dimension,
@@ -56,6 +69,7 @@ function buildQuery(config: ReportConfigDto): string {
     groupByIncludeEmpty,
     metrics,
     orderBy,
+    filters,
   } = config;
 
   assertIdentifier(dataSource.datasetId, 'datasetId');
@@ -100,11 +114,103 @@ function buildQuery(config: ReportConfigDto): string {
     );
   }
 
+  const whereClauses: string[] = [];
+  const params: Record<string, unknown> = {};
+  const types: Record<string, string | string[]> = {};
+
+  // Exclude NULLs in groupBy unless explicitly included
+  if (groupBy && !groupByIncludeEmpty) {
+    whereClauses.push(`\`${groupBy}\` IS NOT NULL`);
+  }
+
+  // Filter conditions → parameterized WHERE clauses
+  (filters ?? []).forEach((filter, i) => {
+    const { condition } = filter;
+    if (!condition?.column || !condition?.operator) return;
+
+    const needsValue = !['is_null', 'is_not_null'].includes(condition.operator);
+    if (needsValue && (condition.value === null || condition.value === undefined)) return;
+    if (
+      (condition.operator === 'in' || condition.operator === 'not_in') &&
+      Array.isArray(condition.value) && condition.value.length === 0
+    ) return;
+
+    assertColumn(condition.column);
+    const col = `\`${condition.column}\``;
+    const p = `f${i}`;
+
+    switch (condition.operator) {
+      case 'is_null':
+        whereClauses.push(`${col} IS NULL`);
+        break;
+      case 'is_not_null':
+        whereClauses.push(`${col} IS NOT NULL`);
+        break;
+      case 'equals':
+        whereClauses.push(`${col} = @${p}`);
+        params[p] = coerceScalar(condition.value as string);
+        break;
+      case 'not_equals':
+        whereClauses.push(`${col} != @${p}`);
+        params[p] = coerceScalar(condition.value as string);
+        break;
+      case 'contains':
+        whereClauses.push(`${col} LIKE @${p}`);
+        params[p] = `%${condition.value}%`;
+        break;
+      case 'not_contains':
+        whereClauses.push(`${col} NOT LIKE @${p}`);
+        params[p] = `%${condition.value}%`;
+        break;
+      case 'starts_with':
+        whereClauses.push(`${col} LIKE @${p}`);
+        params[p] = `${condition.value}%`;
+        break;
+      case 'ends_with':
+        whereClauses.push(`${col} LIKE @${p}`);
+        params[p] = `%${condition.value}`;
+        break;
+      case 'greater_than':
+        whereClauses.push(`${col} > @${p}`);
+        params[p] = coerceScalar(condition.value as string);
+        break;
+      case 'less_than':
+        whereClauses.push(`${col} < @${p}`);
+        params[p] = coerceScalar(condition.value as string);
+        break;
+      case 'greater_than_or_equal':
+        whereClauses.push(`${col} >= @${p}`);
+        params[p] = coerceScalar(condition.value as string);
+        break;
+      case 'less_than_or_equal':
+        whereClauses.push(`${col} <= @${p}`);
+        params[p] = coerceScalar(condition.value as string);
+        break;
+      case 'in': {
+        const raw = Array.isArray(condition.value) ? condition.value : [condition.value as string];
+        const coerced = raw.map(coerceScalar);
+        const allNumeric = coerced.every((v) => typeof v === 'number');
+        whereClauses.push(`${col} IN UNNEST(@${p})`);
+        params[p] = coerced;
+        types[p] = [allNumeric ? 'FLOAT64' : 'STRING'];
+        break;
+      }
+      case 'not_in': {
+        const raw = Array.isArray(condition.value) ? condition.value : [condition.value as string];
+        const coerced = raw.map(coerceScalar);
+        const allNumeric = coerced.every((v) => typeof v === 'number');
+        whereClauses.push(`${col} NOT IN UNNEST(@${p})`);
+        params[p] = coerced;
+        types[p] = [allNumeric ? 'FLOAT64' : 'STRING'];
+        break;
+      }
+    }
+  });
+
   let sql = `SELECT\n  ${selectParts.join(',\n  ')}\nFROM ${table}`;
 
-  // WHERE: exclude NULLs in groupBy unless explicitly included
-  if (groupBy && !groupByIncludeEmpty) {
-    sql += `\nWHERE \`${groupBy}\` IS NOT NULL`;
+  if (whereClauses.length > 0) {
+    sql += `\nWHERE ${whereClauses.join('\n  AND ')}`;
   }
 
   // GROUP BY
@@ -126,7 +232,7 @@ function buildQuery(config: ReportConfigDto): string {
     sql += `\nORDER BY ${orderAlias} ${orderBy.direction.toUpperCase()}`;
   }
 
-  return sql;
+  return { sql, params, types };
 }
 
 // BigQuery date/time types that carry their value in a `.value` string property
@@ -172,11 +278,15 @@ export class ReportsService {
       );
     }
 
-    const sql = buildQuery(config);
+    const { sql, params, types } = buildQuery(config);
     this.logger.debug(`Running report query:\n${sql}`);
 
     const bigquery = new BigQuery({ projectId: organization.gcpProjectId! });
-    const [rows] = await bigquery.query({ query: sql });
+    const [rows] = await bigquery.query({
+      query: sql,
+      params: Object.keys(params).length > 0 ? params : undefined,
+      types: Object.keys(types).length > 0 ? types : undefined,
+    });
 
     return serialise(rows) as unknown[];
   }

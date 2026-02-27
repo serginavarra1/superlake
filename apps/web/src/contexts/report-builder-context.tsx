@@ -24,6 +24,28 @@ export interface OrderByConfig {
   direction: OrderByDirection
 }
 
+export type FilterOperator =
+  | "is_null" | "is_not_null"
+  | "equals" | "not_equals"
+  | "contains" | "not_contains"
+  | "starts_with" | "ends_with"
+  | "greater_than" | "less_than"
+  | "greater_than_or_equal" | "less_than_or_equal"
+  | "in" | "not_in"
+
+export interface FilterCondition {
+  id: string
+  column: string | null
+  operator: FilterOperator | null
+  value: string | string[] | null   // string[] only for in/not_in
+}
+
+export interface ReportFilter {
+  id: string
+  name: string
+  condition: FilterCondition
+}
+
 export type VisualizationType = "bar" | "line" | "pie" | "single_metric"
 
 export interface VisualizationConfig {
@@ -42,6 +64,7 @@ export interface ReportConfig {
   metrics: Metric[]
   orderBy: OrderByConfig | null
   visualization: VisualizationConfig | null
+  filters: ReportFilter[]
 }
 
 const INITIAL_CONFIG: ReportConfig = {
@@ -55,6 +78,7 @@ const INITIAL_CONFIG: ReportConfig = {
   metrics: [],
   orderBy: null,
   visualization: null,
+  filters: [],
 }
 
 type Action =
@@ -70,6 +94,9 @@ type Action =
   | { type: "REMOVE_METRIC"; payload: string } // metric id
   | { type: "SET_ORDER_BY"; payload: OrderByConfig | null }
   | { type: "SET_VISUALIZATION"; payload: VisualizationConfig | null }
+  | { type: "ADD_FILTER"; payload: ReportFilter }
+  | { type: "UPDATE_FILTER"; payload: ReportFilter }
+  | { type: "REMOVE_FILTER"; payload: string }
 
 function reducer(state: ReportConfig, action: Action): ReportConfig {
   switch (action.type) {
@@ -133,6 +160,12 @@ function reducer(state: ReportConfig, action: Action): ReportConfig {
       return { ...state, orderBy: action.payload }
     case "SET_VISUALIZATION":
       return { ...state, visualization: action.payload }
+    case "ADD_FILTER":
+      return { ...state, filters: [...state.filters, action.payload] }
+    case "UPDATE_FILTER":
+      return { ...state, filters: state.filters.map((f) => f.id === action.payload.id ? action.payload : f) }
+    case "REMOVE_FILTER":
+      return { ...state, filters: state.filters.filter((f) => f.id !== action.payload) }
   }
 }
 
@@ -149,6 +182,9 @@ export interface ReportActions {
   removeMetric: (id: string) => void
   setOrderBy: (orderBy: OrderByConfig | null) => void
   setVisualization: (config: VisualizationConfig | null) => void
+  addFilter: (filter: ReportFilter) => void
+  updateFilter: (filter: ReportFilter) => void
+  removeFilter: (id: string) => void
 }
 
 // Split into two contexts so components that only need actions don't re-render on config changes.
@@ -173,6 +209,9 @@ export function ReportBuilderProvider({ children }: { children: React.ReactNode 
       removeMetric: (id) => dispatch({ type: "REMOVE_METRIC", payload: id }),
       setOrderBy: (orderBy) => dispatch({ type: "SET_ORDER_BY", payload: orderBy }),
       setVisualization: (config) => dispatch({ type: "SET_VISUALIZATION", payload: config }),
+      addFilter: (filter) => dispatch({ type: "ADD_FILTER", payload: filter }),
+      updateFilter: (filter) => dispatch({ type: "UPDATE_FILTER", payload: filter }),
+      removeFilter: (id) => dispatch({ type: "REMOVE_FILTER", payload: id }),
     }),
     [], // eslint-disable-line react-hooks/exhaustive-deps — dispatch is guaranteed stable
   )

@@ -22,5 +22,8 @@
       "esbuild",
       "prisma"
     ]
+  },
+  "dependencies": {
+    "ag-charts-react": "^13.1.0"
   }
 }

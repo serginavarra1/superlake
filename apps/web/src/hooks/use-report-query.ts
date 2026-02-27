@@ -32,6 +32,9 @@ function buildQueryPayload(config: ReportConfig) {
     groupByIncludeEmpty: config.groupByIncludeEmpty,
     metrics: config.metrics,
     orderBy: config.orderBy,
+    filters: config.filters.filter(
+      (f) => f.condition.column && f.condition.operator,
+    ),
   }
 }
 

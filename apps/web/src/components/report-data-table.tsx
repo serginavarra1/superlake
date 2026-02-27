@@ -3,7 +3,6 @@ import { ChevronDown, ChevronUp, Loader2 } from "lucide-react"
 import { AgGridReact } from "ag-grid-react"
 import { ModuleRegistry, AllCommunityModule, type ColDef } from "ag-grid-community"
 import { useReportConfig, type DimensionGranularity, type ReportConfig } from "@/contexts/report-builder-context"
-import { useReportQuery } from "@/hooks/use-report-query"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Button } from "@/components/ui/button"
 
@@ -121,10 +120,16 @@ function deriveColumns(config: ReportConfig): ColDef[] {
   return cols
 }
 
-export function ReportDataTable() {
+interface ReportDataTableProps {
+  data: Record<string, unknown>[] | undefined
+  isFetching: boolean
+  isError: boolean
+  error: Error | null
+}
+
+export function ReportDataTable({ data, isFetching, isError, error }: ReportDataTableProps) {
   const [open, setOpen] = React.useState(false)
   const config = useReportConfig()
-  const { data, isFetching, isError, error } = useReportQuery(config)
 
   const colDefs = React.useMemo(() => deriveColumns(config), [config])
   const rowData = React.useMemo(() => data ?? [], [data])
