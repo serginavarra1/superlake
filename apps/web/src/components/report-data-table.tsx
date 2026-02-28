@@ -128,7 +128,7 @@ interface ReportDataTableProps {
 }
 
 export function ReportDataTable({ data, isFetching, isError, error }: ReportDataTableProps) {
-  const [open, setOpen] = React.useState(false)
+  const [open, setOpen] = React.useState(true)
   const config = useReportConfig()
 
   const colDefs = React.useMemo(() => deriveColumns(config), [config])

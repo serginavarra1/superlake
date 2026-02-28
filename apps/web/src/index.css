@@ -123,3 +123,9 @@
     @apply bg-background text-foreground;
   }
 }
+
+.react-grid-placeholder {
+  background: #e5e7eb !important;
+  opacity: 0.5 !important;
+  border-radius: 0.5rem;
+}

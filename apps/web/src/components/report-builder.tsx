@@ -1,22 +1,24 @@
-import { ReportBuilderProvider, useReportConfig } from "@/contexts/report-builder-context"
+import { ReportBuilderProvider, useReportConfig, useReportActions } from "@/contexts/report-builder-context"
 import { ReportBuilderConfig } from "@/components/report-builder-config"
 import { ReportDataTable } from "@/components/report-data-table"
 import { ReportChart } from "@/components/report-chart"
 import { useReportQuery } from "@/hooks/use-report-query"
 
-interface ReportBuilderProps {
-  title?: string
-}
-
-function ReportBuilderInner({ title }: { title: string }) {
+function ReportBuilderInner() {
   const config = useReportConfig()
+  const { setTitle } = useReportActions()
   const { data, isFetching, isError, error } = useReportQuery(config)
 
   return (
     <div className="flex h-full flex-col">
       {/* Top bar */}
-      <div className="flex items-center justify-between border-b px-6 py-3">
-        <h1 className="text-sm font-medium">{title}</h1>
+      <div className="flex items-center justify-between border-b px-4 py-2">
+        <input
+          value={config.title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="New report"
+          className="bg-transparent w-96 text-sm font-medium outline-none placeholder:text-muted-foreground hover:bg-muted focus:bg-muted rounded px-1 py-1"
+        />
       </div>
 
       {/* Main content */}
@@ -35,10 +37,10 @@ function ReportBuilderInner({ title }: { title: string }) {
   )
 }
 
-export default function ReportBuilder({ title = "New report" }: ReportBuilderProps) {
+export default function ReportBuilder() {
   return (
     <ReportBuilderProvider>
-      <ReportBuilderInner title={title} />
+      <ReportBuilderInner />
     </ReportBuilderProvider>
   )
 }

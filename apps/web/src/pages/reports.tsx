@@ -1,7 +1,7 @@
-import ReportBuilder from "@/components/report-builder"
+import DashboardBuilder from "@/components/dashboard-builder"
 
 export default function ReportsPage() {
   return (
-    <ReportBuilder />
+    <DashboardBuilder />
   )
 }

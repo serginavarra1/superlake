@@ -110,7 +110,6 @@ function buildChartOptions(
     const total = data.reduce((sum, row) => sum + Number(row["metric_0"] ?? 0), 0)
     return {
       data,
-      title: config.title ? { text: config.title } : undefined,
       series: [
         {
           type: "pie",
@@ -151,7 +150,6 @@ function buildChartOptions(
     )
     return {
       data: pivoted,
-      title: config.title ? { text: config.title } : undefined,
       series,
       axes: [
         { type: "category", position: "bottom" },
@@ -172,7 +170,6 @@ function buildChartOptions(
 
   return {
     data,
-    title: config.title ? { text: config.title } : undefined,
     series,
     axes: [
       { type: "category", position: "bottom" },
