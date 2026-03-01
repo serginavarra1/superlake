@@ -1,3 +1,10 @@
+export interface Dashboard {
+  id: string
+  title: string
+  createdAt: string
+  updatedAt: string
+}
+
 export type GcpStatus =
   | 'pending'
   | 'creating'

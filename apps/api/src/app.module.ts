@@ -11,6 +11,7 @@ import { OrganizationsModule } from './organizations/organizations.module';
 import { GcpModule } from './gcp/gcp.module';
 import { DatasetsModule } from './datasets/datasets.module';
 import { ReportsModule } from './reports/reports.module';
+import { DashboardsModule } from './dashboards/dashboards.module';
 import { validate } from './config/env.validation';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
@@ -29,6 +30,7 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
     OrganizationsModule,
     DatasetsModule,
     ReportsModule,
+    DashboardsModule,
     WebhooksModule,
   ],
   controllers: [AppController],

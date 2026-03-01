@@ -12,6 +12,7 @@ import SignInPage from './pages/sign-in'
 import SignUpPage from './pages/sign-up'
 import HomePage from './pages/home'
 import ReportsPage from './pages/reports'
+import DashboardBuilder from './components/dashboard-builder'
 import AIChatPage from './pages/ai-chat'
 import DataStudioPage from './pages/data-studio'
 import ConnectionsPage from './pages/connections'
@@ -39,6 +40,7 @@ function App() {
                 <Route element={<AppLayout />}>
                   <Route path="/home" element={<HomePage />} />
                   <Route path="/reports" element={<ReportsPage />} />
+                  <Route path="/reports/:id" element={<DashboardBuilder />} />
                   <Route path="/ai-chat" element={<AIChatPage />} />
                   <Route path="/data-management/data-studio" element={<DataStudioPage />} />
                   <Route path="/data-management/connections" element={<ConnectionsPage />} />

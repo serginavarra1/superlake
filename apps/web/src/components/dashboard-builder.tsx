@@ -1,12 +1,15 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useParams } from "react-router-dom"
 import GridLayout, { useContainerWidth } from "react-grid-layout"
 import type { LayoutItem } from "react-grid-layout"
 import "react-grid-layout/css/styles.css"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import ReportBuilder from "@/components/report-builder"
-import { Plus } from "lucide-react"
+import { Plus, MoreHorizontal, Pencil, Trash2, FileBarChart } from "lucide-react"
+import { useDashboard, useUpdateDashboard } from "@/hooks/use-dashboards"
 
 const COLS = 24
 const ROW_HEIGHT = 30
@@ -28,11 +31,28 @@ const WIDGET_LABELS: Record<string, string> = {
 }
 
 export default function DashboardBuilder() {
+  const { id } = useParams<{ id: string }>()
+  const { data: dashboard } = useDashboard(id ?? "")
+  const updateDashboard = useUpdateDashboard()
+
   const [title, setTitle] = useState("")
   const [layout, setLayout] = useState<LayoutItem[]>(initialLayout)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [hoveredWidget, setHoveredWidget] = useState<string | null>(null)
   const { width, containerRef } = useContainerWidth()
+
+  useEffect(() => {
+    if (dashboard?.title !== undefined) {
+      setTitle(dashboard.title)
+    }
+  }, [dashboard?.title])
+
+  function handleTitleBlur() {
+    if (id && title !== dashboard?.title) {
+      updateDashboard.mutate({ id, title })
+    }
+  }
 
   function handleSheetClose(open: boolean) {
     if (!open) {
@@ -54,13 +74,24 @@ export default function DashboardBuilder() {
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          onBlur={handleTitleBlur}
           placeholder="New Dashboard"
           className="bg-transparent w-96 text-sm font-medium outline-none placeholder:text-muted-foreground hover:bg-muted focus:bg-muted rounded px-1 py-1"
         />
-        <Button size="sm" variant="outline" onClick={() => setSheetOpen(true)}>
-          <Plus className="size-4" />
-          Add widget
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" variant="outline">
+              <Plus className="size-4" />
+              Add widget
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => setSheetOpen(true)}>
+              <FileBarChart className="size-4" />
+              Add report
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <Sheet open={sheetOpen} onOpenChange={handleSheetClose}>
@@ -99,9 +130,34 @@ export default function DashboardBuilder() {
             onLayoutChange={(l) => setLayout([...l])}
           >
             {initialLayout.map(({ i }) => (
-              <div key={i} className="rounded-lg border bg-card">
-                <div className="drag-handle flex cursor-grab items-center border-b px-3 py-2 text-xs font-medium active:cursor-grabbing">
+              <div
+                key={i}
+                className="rounded-lg border bg-card"
+                onMouseEnter={() => setHoveredWidget(i)}
+                onMouseLeave={() => setHoveredWidget(null)}
+              >
+                <div className="drag-handle flex cursor-grab items-center justify-between border-b px-3 py-2 text-xs font-medium active:cursor-grabbing">
                   {WIDGET_LABELS[i]}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        className={`rounded p-0.5 hover:bg-muted transition-opacity ${hoveredWidget === i ? "opacity-100" : "opacity-0"}`}
+                        onMouseDown={(e) => e.stopPropagation()}
+                      >
+                        <MoreHorizontal className="size-4 text-muted-foreground" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem>
+                        <Pencil className="size-4" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive focus:text-destructive">
+                        <Trash2 className="size-4 text-red-500" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
                 <div className="flex h-full items-center justify-center p-4">
                   <p className="text-muted-foreground text-sm">Empty widget</p>
