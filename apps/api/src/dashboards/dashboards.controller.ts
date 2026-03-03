@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/commo
 import { DashboardsService } from './dashboards.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ClerkUser } from '../auth/interfaces/clerk-user.interface';
-import { CreateDashboardDto, UpdateDashboardDto } from './dashboards.types';
+import { CreateDashboardDto, CreateWidgetDto, UpdateDashboardDto, UpdateWidgetDto } from './dashboards.types';
 
 @Controller('dashboards')
 export class DashboardsController {
@@ -38,5 +38,33 @@ export class DashboardsController {
   @Delete(':id')
   async delete(@CurrentUser() user: ClerkUser, @Param('id') id: string) {
     return this.dashboardsService.delete(user.orgId!, id);
+  }
+
+  @Post(':id/widgets')
+  async addWidget(
+    @CurrentUser() user: ClerkUser,
+    @Param('id') id: string,
+    @Body() dto: CreateWidgetDto,
+  ) {
+    return this.dashboardsService.addWidget(user.orgId!, id, dto);
+  }
+
+  @Patch(':id/widgets/:widgetId')
+  async updateWidget(
+    @CurrentUser() user: ClerkUser,
+    @Param('id') id: string,
+    @Param('widgetId') widgetId: string,
+    @Body() dto: UpdateWidgetDto,
+  ) {
+    return this.dashboardsService.updateWidget(user.orgId!, id, widgetId, dto);
+  }
+
+  @Delete(':id/widgets/:widgetId')
+  async deleteWidget(
+    @CurrentUser() user: ClerkUser,
+    @Param('id') id: string,
+    @Param('widgetId') widgetId: string,
+  ) {
+    return this.dashboardsService.deleteWidget(user.orgId!, id, widgetId);
   }
 }

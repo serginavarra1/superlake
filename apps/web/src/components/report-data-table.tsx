@@ -1,8 +1,9 @@
 import * as React from "react"
 import { ChevronDown, ChevronUp, Loader2 } from "lucide-react"
 import { AgGridReact } from "ag-grid-react"
-import { ModuleRegistry, AllCommunityModule, type ColDef } from "ag-grid-community"
+import { ModuleRegistry, AllCommunityModule, themeQuartz, type ColDef } from "ag-grid-community"
 import { useReportConfig, type DimensionGranularity, type ReportConfig } from "@/contexts/report-builder-context"
+import { metricLabel, metricKey, DIMENSION_KEY, GROUP_BY_KEY } from "@/lib/report-utils"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Button } from "@/components/ui/button"
 
@@ -83,6 +84,8 @@ function makeDateFormatter(granularity: DimensionGranularity | null) {
   return undefined
 }
 
+const DEFAULT_COL_DEF: ColDef = { sortable: false, resizable: false }
+
 function deriveColumns(config: ReportConfig): ColDef[] {
   const cols: ColDef[] = []
 
@@ -91,7 +94,7 @@ function deriveColumns(config: ReportConfig): ColDef[] {
       ? `${config.dimension} (${granularityLabel(config.dimensionGranularity)})`
       : config.dimension
     cols.push({
-      field: "dimension",
+      field: DIMENSION_KEY,
       headerName: label,
       flex: 1,
       valueFormatter: makeDateFormatter(config.dimensionGranularity),
@@ -103,7 +106,7 @@ function deriveColumns(config: ReportConfig): ColDef[] {
       ? `${config.groupBy} (${granularityLabel(config.groupByGranularity)})`
       : config.groupBy
     cols.push({
-      field: "group_by",
+      field: GROUP_BY_KEY,
       headerName: label,
       flex: 1,
       valueFormatter: makeDateFormatter(config.groupByGranularity),
@@ -111,10 +114,7 @@ function deriveColumns(config: ReportConfig): ColDef[] {
   }
 
   config.metrics.forEach((m, i) => {
-    const label = m.column
-      ? `${m.operation.toUpperCase()}(${m.column})`
-      : `${m.operation.toUpperCase()}(*)`
-    cols.push({ field: `metric_${i}`, headerName: label, flex: 1 })
+    cols.push({ field: metricKey(i), headerName: metricLabel(m), flex: 1 })
   })
 
   return cols
@@ -158,14 +158,15 @@ export function ReportDataTable({ data, isFetching, isError, error }: ReportData
         <div className="h-72 px-4 pb-4">
           {isError ? (
             <div className="flex h-full items-center justify-center text-sm text-destructive">
-              {(error as Error)?.message ?? "Failed to load data"}
+              {error?.message ?? "Failed to load data"}
             </div>
           ) : (
             <div className="h-full w-full">
               <AgGridReact
+                theme={themeQuartz}
                 rowData={rowData}
                 columnDefs={colDefs}
-                defaultColDef={{ sortable: false, resizable: false }}
+                defaultColDef={DEFAULT_COL_DEF}
                 rowHeight={36}
                 headerHeight={36}
                 suppressMovableColumns

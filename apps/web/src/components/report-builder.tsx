@@ -1,10 +1,11 @@
 import { ReportBuilderProvider, useReportConfig, useReportActions } from "@/contexts/report-builder-context"
+import type { ReportConfig } from "@/contexts/report-builder-context"
 import { ReportBuilderConfig } from "@/components/report-builder-config"
 import { ReportDataTable } from "@/components/report-data-table"
 import { ReportChart } from "@/components/report-chart"
 import { useReportQuery } from "@/hooks/use-report-query"
 
-function ReportBuilderInner() {
+function ReportBuilderInner({ onSave }: { onSave?: (config: ReportConfig) => void }) {
   const config = useReportConfig()
   const { setTitle } = useReportActions()
   const { data, isFetching, isError, error } = useReportQuery(config)
@@ -28,19 +29,25 @@ function ReportBuilderInner() {
           <ReportChart config={config} data={data} isFetching={isFetching} isError={isError} />
 
           {/* Data table */}
-          <ReportDataTable data={data} isFetching={isFetching} isError={isError} error={error as Error | null} />
+          <ReportDataTable data={data} isFetching={isFetching} isError={isError} error={error} />
         </div>
 
-        <ReportBuilderConfig />
+        <ReportBuilderConfig onSave={() => onSave?.(config)} />
       </div>
     </div>
   )
 }
 
-export default function ReportBuilder() {
+export default function ReportBuilder({
+  onSave,
+  initialConfig,
+}: {
+  onSave?: (config: ReportConfig) => void
+  initialConfig?: ReportConfig
+}) {
   return (
-    <ReportBuilderProvider>
-      <ReportBuilderInner />
+    <ReportBuilderProvider initialConfig={initialConfig}>
+      <ReportBuilderInner onSave={onSave} />
     </ReportBuilderProvider>
   )
 }

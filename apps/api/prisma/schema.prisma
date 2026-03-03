@@ -28,10 +28,29 @@ model Organization {
 }
 
 model Dashboard {
-  id             String       @id @default(cuid())
+  id             String            @id @default(cuid())
   title          String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   organizationId String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  widgets        DashboardWidget[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+}
+
+enum WidgetType {
+  report
+}
+
+model DashboardWidget {
+  id          String     @id @default(cuid())
+  dashboard   Dashboard  @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
+  dashboardId String
+  type        WidgetType
+  config      Json
+  x           Int
+  y           Int
+  w           Int
+  h           Int
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 }

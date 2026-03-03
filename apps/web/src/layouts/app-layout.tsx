@@ -29,10 +29,13 @@ export default function AppLayout() {
   const { pathname } = useLocation()
   const { organization } = useOrganization()
   const segments = pathname.split('/').filter(Boolean)
-  const breadcrumbs = segments.map((segment, index) => ({
-    title: segmentTitles[segment] ?? segment.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
-    url: '/' + segments.slice(0, index + 1).join('/'),
-    isLast: index === segments.length - 1,
+  const knownSegments = segments
+    .map((segment, index) => ({ segment, url: '/' + segments.slice(0, index + 1).join('/') }))
+    .filter(({ segment }) => segment in segmentTitles)
+  const breadcrumbs = knownSegments.map(({ segment, url }, index) => ({
+    title: segmentTitles[segment],
+    url,
+    isLast: index === knownSegments.length - 1,
   }))
 
   return (

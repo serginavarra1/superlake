@@ -191,8 +191,8 @@ export interface ReportActions {
 const ReportConfigContext = React.createContext<ReportConfig | null>(null)
 const ReportActionsContext = React.createContext<ReportActions | null>(null)
 
-export function ReportBuilderProvider({ children }: { children: React.ReactNode }) {
-  const [config, dispatch] = React.useReducer(reducer, INITIAL_CONFIG)
+export function ReportBuilderProvider({ children, initialConfig }: { children: React.ReactNode; initialConfig?: ReportConfig }) {
+  const [config, dispatch] = React.useReducer(reducer, initialConfig ?? INITIAL_CONFIG)
 
   // Actions are stable — dispatch never changes, so this memo has no deps that ever change.
   const actions = React.useMemo<ReportActions>(

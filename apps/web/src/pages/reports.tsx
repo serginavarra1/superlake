@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { toast } from "sonner"
 import { ArrowUpDown, ArrowUp, ArrowDown, Plus, LayoutGrid, Check, Calendar, ALargeSmall, MoreHorizontal, Trash2, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import {
   DropdownMenu,
@@ -73,7 +75,6 @@ export default function ReportsPage() {
   const [sortField, setSortField] = useState<SortField>("createdAt")
   const [sortOrder, setSortOrder] = useState<SortOrder>("descending")
 
-  const [hoveredRow, setHoveredRow] = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [search, setSearch] = useState("")
   const { data: dashboards = [], isLoading, isError } = useDashboards()
@@ -88,8 +89,12 @@ export default function ReportsPage() {
   }, [dashboards, search, sortField, sortOrder])
 
   async function handleNewDashboard() {
-    const dashboard = await createDashboard.mutateAsync("New Dashboard")
-    navigate(`/reports/${dashboard.id}`)
+    try {
+      const dashboard = await createDashboard.mutateAsync("New Dashboard")
+      navigate(`/reports/${dashboard.id}`)
+    } catch {
+      toast.error("Failed to create dashboard")
+    }
   }
 
   return (
@@ -101,7 +106,7 @@ export default function ReportsPage() {
             <DropdownMenuTrigger asChild>
               <Button size="sm" className="gap-1.5" variant="outline">
                 <ArrowUpDown className="size-3.5" />
-                Sorted by <label className="text-muted-foreground">{fieldLabels[sortField]}</label>
+                Sorted by <span className="text-muted-foreground">{fieldLabels[sortField]}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-48">
@@ -138,11 +143,11 @@ export default function ReportsPage() {
           </DropdownMenu>
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
-            <input
+            <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search dashboards…"
-              className="h-8 rounded-md border bg-transparent pl-8 pr-3 text-sm outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-ring w-96"
+              className="h-8 pl-8 w-96"
             />
           </div>
         </div>
@@ -171,19 +176,20 @@ export default function ReportsPage() {
                   Created at
                 </span>
               </th>
+              <th className="w-10" />
             </tr>
           </thead>
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={2} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">
                   Loading dashboards…
                 </td>
               </tr>
             )}
             {isError && (
               <tr>
-                <td colSpan={2} className="px-4 py-8 text-center text-destructive">
+                <td colSpan={3} className="px-4 py-8 text-center text-destructive">
                   Failed to load dashboards.
                 </td>
               </tr>
@@ -217,8 +223,6 @@ export default function ReportsPage() {
                 key={dashboard.id}
                 className="border-b hover:bg-muted/50 cursor-pointer group"
                 onClick={() => navigate(`/reports/${dashboard.id}`)}
-                onMouseEnter={() => setHoveredRow(dashboard.id)}
-                onMouseLeave={() => setHoveredRow(null)}
               >
                 <td className="px-4 py-3">
                   <span className="flex items-center gap-2.5">
@@ -233,7 +237,7 @@ export default function ReportsPage() {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button
-                        className={`rounded p-1 hover:bg-muted transition-opacity ${hoveredRow === dashboard.id ? "opacity-100" : "opacity-0"}`}
+                        className="rounded p-1 hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <MoreHorizontal className="size-4 text-muted-foreground" />
@@ -275,7 +279,10 @@ export default function ReportsPage() {
               variant="destructive"
               disabled={deleteDashboard.isPending}
               onClick={() => {
-                if (deleteId) deleteDashboard.mutate(deleteId, { onSuccess: () => setDeleteId(null) })
+                if (deleteId) deleteDashboard.mutate(deleteId, {
+                  onSuccess: () => setDeleteId(null),
+                  onError: () => toast.error("Failed to delete dashboard"),
+                })
               }}
             >
               Delete

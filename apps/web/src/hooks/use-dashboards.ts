@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '@/lib/api-client'
-import type { Dashboard } from '@/types/api'
+import type { Dashboard, DashboardWidget, ReportWidget } from '@/types/api'
+import type { ReportConfig } from '@/contexts/report-builder-context'
 
 export function useDashboards() {
   return useQuery({
@@ -55,6 +56,55 @@ export function useDeleteDashboard() {
       apiFetch(`/dashboards/${id}`, { method: 'DELETE' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dashboards'] })
+    },
+  })
+}
+
+export function useAddWidget(dashboardId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: { type: 'report'; config: ReportConfig; x: number; y: number; w: number; h: number }) =>
+      apiFetch<{ data: DashboardWidget }>(`/dashboards/${dashboardId}/widgets`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }).then((res) => res.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboards', dashboardId] })
+    },
+  })
+}
+
+export function useUpdateWidget(dashboardId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      widgetId,
+      ...payload
+    }: {
+      widgetId: string
+      config?: ReportConfig
+      x?: number
+      y?: number
+      w?: number
+      h?: number
+    }) =>
+      apiFetch<{ data: DashboardWidget }>(`/dashboards/${dashboardId}/widgets/${widgetId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      }).then((res) => res.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboards', dashboardId] })
+    },
+  })
+}
+
+export function useDeleteWidget(dashboardId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (widgetId: string) =>
+      apiFetch(`/dashboards/${dashboardId}/widgets/${widgetId}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboards', dashboardId] })
     },
   })
 }

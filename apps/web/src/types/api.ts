@@ -1,6 +1,27 @@
+import type { ReportConfig } from '@/contexts/report-builder-context'
+
+interface BaseWidget {
+  id: string
+  dashboardId: string
+  x: number
+  y: number
+  w: number
+  h: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ReportWidget extends BaseWidget {
+  type: 'report'
+  config: ReportConfig
+}
+
+export type DashboardWidget = ReportWidget
+
 export interface Dashboard {
   id: string
   title: string
+  widgets: DashboardWidget[]
   createdAt: string
   updatedAt: string
 }

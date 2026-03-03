@@ -7,7 +7,11 @@ import { VisualizationSelector } from "@/components/visualization-selector"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 
-export function ReportBuilderConfig() {
+interface ReportBuilderConfigProps {
+  onSave?: () => void
+}
+
+export function ReportBuilderConfig({ onSave }: ReportBuilderConfigProps) {
   return (
     <aside className="flex w-96 flex-col border-l bg-background">
       <div className="flex-1 overflow-y-auto">
@@ -23,7 +27,7 @@ export function ReportBuilderConfig() {
         </div>
       </div>
       <div className="border-t px-4 py-2">
-        <Button className="w-full h-8">Save</Button>
+        <Button className="w-full h-8" onClick={onSave}>Save</Button>
       </div>
     </aside>
   )

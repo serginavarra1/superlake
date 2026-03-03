@@ -1,22 +1,8 @@
-import * as React from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { apiFetch } from '@/lib/api-client'
+import { useDebounce } from '@/hooks/use-debounce'
+import { isQueryable } from '@/lib/report-utils'
 import type { ReportConfig } from '@/contexts/report-builder-context'
-
-function useDebounce<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = React.useState(value)
-  React.useEffect(() => {
-    const id = setTimeout(() => setDebounced(value), delay)
-    return () => clearTimeout(id)
-  }, [value, delay])
-  return debounced
-}
-
-function isQueryable(config: ReportConfig): boolean {
-  if (!config.dataSource) return false
-  const hasMetric = config.metrics.some((m) => m.column !== null)
-  return !!(config.dimension || hasMetric)
-}
 
 /**
  * Maps ReportConfig to the API request payload.
