@@ -11,29 +11,61 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import ReportBuilder from "@/components/report-builder"
 import { ReportChart } from "@/components/report-chart"
 import { Plus, MoreHorizontal, Pencil, Trash2, FileBarChart, LayoutDashboard } from "lucide-react"
-import { useDashboard, useUpdateDashboard, useAddWidget, useUpdateWidget, useDeleteWidget } from "@/hooks/use-dashboards"
-import { useReportQuery } from "@/hooks/use-report-query"
+import { useDashboard, useUpdateDashboard, useAddWidget, useUpdateWidget, useDeleteWidget, useBatchUpdateWidgets } from "@/hooks/use-dashboards"
+import { useBatchReportQuery } from "@/hooks/use-report-query"
 import type { ReportConfig } from "@/contexts/report-builder-context"
 import type { DashboardWidget } from "@/types/api"
 
 const COLS = 24
 const ROW_HEIGHT = 30
+const DEFAULT_WIDGET_W = 12
+const DEFAULT_WIDGET_H = 10
+
+function findFirstAvailablePosition(layout: LayoutItem[], w: number, h: number): { x: number; y: number } {
+  if (layout.length === 0) return { x: 0, y: 0 }
+
+  const maxY = layout.reduce((max, l) => Math.max(max, l.y + l.h), 0)
+
+  const occupied = new Set<string>()
+  for (const item of layout) {
+    for (let row = item.y; row < item.y + item.h; row++) {
+      for (let col = item.x; col < item.x + item.w; col++) {
+        occupied.add(`${col},${row}`)
+      }
+    }
+  }
+
+  for (let y = 0; y <= maxY; y++) {
+    for (let x = 0; x <= COLS - w; x++) {
+      let fits = true
+      outer: for (let row = y; row < y + h; row++) {
+        for (let col = x; col < x + w; col++) {
+          if (occupied.has(`${col},${row}`)) {
+            fits = false
+            break outer
+          }
+        }
+      }
+      if (fits) return { x, y }
+    }
+  }
+
+  return { x: 0, y: maxY }
+}
 
 interface WidgetCardProps {
   widget: DashboardWidget
   hovered: boolean
   onEdit: () => void
   onDelete: () => void
+  queryData: unknown[] | null | undefined
+  queryFetching: boolean
 }
 
-function WidgetCard({ widget, hovered, onEdit, onDelete }: WidgetCardProps) {
-  const { data, isFetching, isError } = useReportQuery(
-    widget.type === "report" ? widget.config : ({} as ReportConfig),
-  )
-
+function WidgetCard({ widget, hovered, onEdit, onDelete, queryData, queryFetching }: WidgetCardProps) {
   return (
     <>
-      <div className="drag-handle flex cursor-grab items-center justify-between border-b px-3 py-2 text-xs font-medium active:cursor-grabbing">
+      <div className="drag-handle flex cursor-grab justify-between border-b px-3 py-2 text-xs font-medium active:cursor-grabbing">
         <span className="truncate">
           {widget.type === "report" ? widget.config.title || "Untitled widget" : "Widget"}
         </span>
@@ -58,9 +90,14 @@ function WidgetCard({ widget, hovered, onEdit, onDelete }: WidgetCardProps) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="flex-1 min-h-0">
+      <div className="flex flex-1 overflow-hidden">
         {widget.type === "report" && (
-          <ReportChart config={widget.config} data={data} isFetching={isFetching} isError={isError} />
+          <ReportChart
+            config={widget.config}
+            data={queryData as Record<string, unknown>[] | undefined ?? undefined}
+            isFetching={queryFetching}
+            isError={queryData === null}
+          />
         )}
       </div>
     </>
@@ -74,6 +111,7 @@ export default function DashboardBuilder() {
   const addWidget = useAddWidget(id ?? "")
   const updateWidget = useUpdateWidget(id ?? "")
   const deleteWidget = useDeleteWidget(id ?? "")
+  const batchUpdateWidgets = useBatchUpdateWidgets(id ?? "")
 
   const [title, setTitle] = useState("")
   const [layout, setLayout] = useState<LayoutItem[]>([])
@@ -81,7 +119,7 @@ export default function DashboardBuilder() {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [editingWidget, setEditingWidget] = useState<DashboardWidget | null>(null)
   const [hoveredWidget, setHoveredWidget] = useState<string | null>(null)
-  const { width, containerRef } = useContainerWidth()
+  const { width, mounted, containerRef } = useContainerWidth({ measureBeforeMount: true })
 
   // Ref to skip saving layout on initial load from backend
   const layoutLoadedRef = useRef(false)
@@ -123,12 +161,10 @@ export default function DashboardBuilder() {
     }
 
     layoutSaveTimerRef.current = setTimeout(() => {
-      newLayout.forEach((item) => {
-        updateWidget.mutate(
-          { widgetId: item.i, x: item.x, y: item.y, w: item.w, h: item.h },
-          { onError: () => toast.error("Failed to save layout") },
-        )
-      })
+      batchUpdateWidgets.mutate(
+        newLayout.map((item) => ({ id: item.i, x: item.x, y: item.y, w: item.w, h: item.h })),
+        { onError: () => toast.error("Failed to save layout") },
+      )
     }, 600)
   }
 
@@ -145,9 +181,9 @@ export default function DashboardBuilder() {
         },
       )
     } else {
-      const nextY = layout.reduce((max, l) => Math.max(max, l.y + l.h), 0)
+      const { x, y } = findFirstAvailablePosition(layout, DEFAULT_WIDGET_W, DEFAULT_WIDGET_H)
       addWidget.mutate(
-        { type: "report", config, x: 0, y: nextY, w: 12, h: 10 },
+        { type: "report", config, x, y, w: DEFAULT_WIDGET_W, h: DEFAULT_WIDGET_H },
         {
           onSuccess: () => setSheetOpen(false),
           onError: () => toast.error("Failed to save widget"),
@@ -182,6 +218,17 @@ export default function DashboardBuilder() {
   }
 
   const widgets = dashboard?.widgets ?? []
+  const { data: batchData, isFetching: batchFetching } = useBatchReportQuery(
+    widgets.map((w) => ({ id: w.id, config: w.config as ReportConfig })),
+  )
+
+  // Ensure every widget has a layout entry — falls back to server dimensions
+  // to avoid the brief window where a new widget has no matching layout item
+  // and react-grid-layout would assign it a default 1x1 size.
+  const effectiveLayout = widgets.map((w) => {
+    const item = layout.find((l) => l.i === w.id)
+    return item ?? { i: w.id, x: w.x, y: w.y, w: w.w, h: w.h }
+  })
 
   return (
     <div className="flex h-full flex-col">
@@ -240,7 +287,7 @@ export default function DashboardBuilder() {
       </Dialog>
 
       {/* Canvas */}
-      <div className="min-h-0 flex-1 overflow-auto">
+      <div ref={containerRef} className="min-h-0 flex-1 overflow-auto">
         {widgets.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground">
             <LayoutDashboard className="size-10 opacity-40" />
@@ -251,12 +298,12 @@ export default function DashboardBuilder() {
             </Button>
           </div>
         ) : (
-          <div ref={containerRef} className="min-w-[1200px] p-2">
-            <GridLayout
-              layout={layout}
+          <div className="w-[100%] min-w-[900px] p-2">
+            {mounted && <GridLayout
+              layout={effectiveLayout}
               gridConfig={{ cols: COLS, rowHeight: ROW_HEIGHT }}
               dragConfig={{ handle: ".drag-handle" }}
-              width={width}
+              width={width - 16}
               onLayoutChange={handleLayoutChange}
             >
               {widgets.map((widget) => (
@@ -271,10 +318,12 @@ export default function DashboardBuilder() {
                     hovered={hoveredWidget === widget.id}
                     onEdit={() => handleEditWidget(widget)}
                     onDelete={() => handleDeleteWidget(widget.id)}
+                    queryData={batchData?.get(widget.id)}
+                    queryFetching={batchFetching}
                   />
                 </div>
               ))}
-            </GridLayout>
+            </GridLayout>}
           </div>
         )}
       </div>

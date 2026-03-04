@@ -1,5 +1,6 @@
 import { useReportConfig, useReportActions } from "@/contexts/report-builder-context"
 import { useTableDetails } from "@/hooks/use-table-details"
+import { flattenSchema } from "@/lib/report-utils"
 import { ColumnPicker } from "@/components/column-picker"
 import { GranularityPicker } from "@/components/granularity-picker"
 import { Switch } from "@/components/ui/switch"
@@ -27,7 +28,7 @@ export function DimensionSection() {
     dataSource?.tableId ?? "",
   )
 
-  const schema = tableDetails?.schema
+  const schema = flattenSchema(tableDetails?.schema ?? [])
   const isDimDate = dimension ? isDateColumn(schema, dimension) : false
   const isGroupByDate = groupBy ? isDateColumn(schema, groupBy) : false
 

@@ -16,6 +16,7 @@ import {
 import { useReportConfig } from "@/contexts/report-builder-context"
 import { useTableDetails } from "@/hooks/use-table-details"
 import { useDistinctColumnValues } from "@/hooks/use-distinct-column-values"
+import { flattenSchema } from "@/lib/report-utils"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -480,7 +481,7 @@ export function FilterDialog({ open, onOpenChange, initialFilter, onSave }: Filt
     dataSource?.datasetId ?? "",
     dataSource?.tableId ?? "",
   )
-  const schema = tableDetails?.schema as SchemaField[] | undefined
+  const schema = flattenSchema(tableDetails?.schema ?? []) as SchemaField[] | undefined
 
   const [draft, setDraft] = React.useState<ReportFilter>(emptyFilter)
 

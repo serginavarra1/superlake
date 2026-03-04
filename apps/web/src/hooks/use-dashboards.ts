@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '@/lib/api-client'
-import type { Dashboard, DashboardWidget, ReportWidget } from '@/types/api'
+import type { Dashboard, DashboardWidget } from '@/types/api'
 import type { ReportConfig } from '@/contexts/report-builder-context'
 
 export function useDashboards() {
@@ -103,6 +103,20 @@ export function useDeleteWidget(dashboardId: string) {
   return useMutation({
     mutationFn: (widgetId: string) =>
       apiFetch(`/dashboards/${dashboardId}/widgets/${widgetId}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboards', dashboardId] })
+    },
+  })
+}
+
+export function useBatchUpdateWidgets(dashboardId: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (widgets: Array<{ id: string; x: number; y: number; w: number; h: number }>) =>
+      apiFetch(`/dashboards/${dashboardId}/widgets`, {
+        method: 'PATCH',
+        body: JSON.stringify({ widgets }),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dashboards', dashboardId] })
     },

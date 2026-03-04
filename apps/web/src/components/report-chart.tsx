@@ -34,6 +34,16 @@ const numFmt = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 })
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const yFormatter = { y: (params: any) => { if (params.type !== "number") return; return numFmt.format(params.value) } }
 
+const commonCartesianProps = {
+  axes: [
+    { type: "category" as const, position: "bottom" as const },
+    { type: "number" as const, position: "left" as const },
+  ],
+  locale,
+  formatter: yFormatter,
+  tooltip: { mode: "shared" as const },
+}
+
 /**
  * Pivot raw rows that have a `group_by` column into wide-format rows where
  * each unique group_by value becomes its own key(s).
@@ -145,19 +155,9 @@ function buildChartOptions(
           : ({ type: "bar" as const, xKey: DIMENSION_KEY, yKey, yName, stacked })
       })
     )
-    return {
-      data: pivoted,
-      series,
-      axes: [
-        { type: "category", position: "bottom" },
-        { type: "number", position: "left" },
-      ],
-      locale,
-      formatter: yFormatter,
-      tooltip: { mode: "shared" },
     // AgChartOptions is a union including polar variants; bar/line options don't satisfy it
     // without narrowing through unknown first. This is a known AG Charts TS limitation.
-    } as unknown as AgChartOptions
+    return { data: pivoted, series, ...commonCartesianProps } as unknown as AgChartOptions
   }
 
   const series = config.metrics.map((m, i) => {
@@ -168,17 +168,7 @@ function buildChartOptions(
       : ({ type: "bar" as const, xKey: DIMENSION_KEY, yKey, yName, stacked })
   })
 
-  return {
-    data,
-    series,
-    axes: [
-      { type: "category", position: "bottom" },
-      { type: "number", position: "left" },
-    ],
-    locale,
-    formatter: yFormatter,
-    tooltip: { mode: "shared" },
-  } as unknown as AgChartOptions
+  return { data, series, ...commonCartesianProps } as unknown as AgChartOptions
 }
 
 export function ReportChart({ config, data, isFetching, isError }: ReportChartProps) {
@@ -229,7 +219,7 @@ export function ReportChart({ config, data, isFetching, isError }: ReportChartPr
     const value = data[0][metricKey(0)]
     const formatted =
       typeof value === "number"
-        ? new Intl.NumberFormat().format(value)
+        ? numFmt.format(value)
         : String(value ?? "—")
     const label = config.metrics[0] ? metricLabel(config.metrics[0]) : ""
     return (

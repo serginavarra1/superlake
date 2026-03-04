@@ -145,20 +145,27 @@ export class DatasetsService {
     }
 
     const bigquery = new BigQuery({ projectId: organization.gcpProjectId! });
-    const query = `SELECT DISTINCT \`${column}\` FROM \`${datasetId}.${tableId}\` ORDER BY 1 LIMIT 100`;
+    const query = `SELECT DISTINCT ${quoteColumn(column)} FROM \`${datasetId}.${tableId}\` ORDER BY 1 LIMIT 100`;
 
     const [rows] = await bigquery.query({ query });
 
+    // BigQuery returns nested field paths (e.g. "address.street") using only the
+    // leaf segment as the row key, so extract by the last segment of the path.
+    const leafKey = column.split('.').pop()!;
     return rows.map((row: Record<string, unknown>) => {
-      const val = row[column];
+      const val = row[leafKey];
       if (val === null || val === undefined) return null;
       return val as string | number;
     });
   }
 }
 
-// Unicode letters, digits, underscore — safe for backtick-quoted column names
-const SAFE_COLUMN_RE = /^[\p{L}\p{N}_]+$/u;
+// Unicode letters, digits, underscore — safe for backtick-quoted column names; dots allowed for nested field paths
+const SAFE_COLUMN_RE = /^[\p{L}\p{N}_]+(?:\.[\p{L}\p{N}_]+)*$/u;
+
+function quoteColumn(column: string): string {
+  return column.split('.').map((seg) => `\`${seg}\``).join('.');
+}
 // Unicode letters, digits, underscore, hyphens, spaces — safe for backtick-quoted dataset/table identifiers
 const SAFE_IDENTIFIER_RE = /^[\p{L}\p{N}_ -]+$/u;
 

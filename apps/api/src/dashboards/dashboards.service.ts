@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateDashboardDto, CreateWidgetDto, UpdateDashboardDto, UpdateWidgetDto } from './dashboards.types';
+import { BatchUpdateWidgetsDto, CreateDashboardDto, CreateWidgetDto, UpdateDashboardDto, UpdateWidgetDto } from './dashboards.types';
 
 @Injectable()
 export class DashboardsService {
@@ -117,6 +117,25 @@ export class DashboardsService {
         ...(dto.h !== undefined && { h: dto.h }),
       },
     });
+  }
+
+  async batchUpdateWidgets(clerkOrgId: string, dashboardId: string, dto: BatchUpdateWidgetsDto) {
+    const dashboard = await this.prisma.dashboard.findFirst({
+      where: { id: dashboardId, organization: { clerkOrgId } },
+    });
+
+    if (!dashboard) {
+      throw new NotFoundException('Dashboard not found');
+    }
+
+    await this.prisma.$transaction(
+      dto.widgets.map((item) =>
+        this.prisma.dashboardWidget.update({
+          where: { id: item.id, dashboardId },
+          data: { x: item.x, y: item.y, w: item.w, h: item.h },
+        }),
+      ),
+    );
   }
 
   async deleteWidget(clerkOrgId: string, dashboardId: string, widgetId: string) {

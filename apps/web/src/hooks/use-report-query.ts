@@ -24,6 +24,32 @@ function buildQueryPayload(config: ReportConfig) {
   }
 }
 
+export function useBatchReportQuery(widgets: Array<{ id: string; config: ReportConfig }>) {
+  const queryable = widgets.map(({ id, config }) => ({
+    id,
+    payload: isQueryable(config) ? buildQueryPayload(config) : null,
+  }))
+
+  const queries = queryable.flatMap((w) => (w.payload ? [w.payload] : []))
+
+  return useQuery({
+    queryKey: ['batch-report-query', queryable.map((w) => w.payload)],
+    queryFn: () =>
+      apiFetch<{ data: (unknown[] | null)[] }>('/reports/batch-query', {
+        method: 'POST',
+        body: JSON.stringify({ queries }),
+      }).then((res) => {
+        const map = new Map<string, unknown[] | null>()
+        let qi = 0
+        for (const { id, payload } of queryable) {
+          map.set(id, payload ? (res.data[qi++] ?? null) : null)
+        }
+        return map
+      }),
+    enabled: queries.length > 0,
+  })
+}
+
 export function useReportQuery(config: ReportConfig) {
   const payload = buildQueryPayload(config)
   const debouncedPayload = useDebounce(payload, 400)

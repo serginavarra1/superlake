@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/commo
 import { DashboardsService } from './dashboards.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ClerkUser } from '../auth/interfaces/clerk-user.interface';
-import { CreateDashboardDto, CreateWidgetDto, UpdateDashboardDto, UpdateWidgetDto } from './dashboards.types';
+import { BatchUpdateWidgetsDto, CreateDashboardDto, CreateWidgetDto, UpdateDashboardDto, UpdateWidgetDto } from './dashboards.types';
 
 @Controller('dashboards')
 export class DashboardsController {
@@ -47,6 +47,15 @@ export class DashboardsController {
     @Body() dto: CreateWidgetDto,
   ) {
     return this.dashboardsService.addWidget(user.orgId!, id, dto);
+  }
+
+  @Patch(':id/widgets')
+  async batchUpdateWidgets(
+    @CurrentUser() user: ClerkUser,
+    @Param('id') id: string,
+    @Body() dto: BatchUpdateWidgetsDto,
+  ) {
+    return this.dashboardsService.batchUpdateWidgets(user.orgId!, id, dto);
   }
 
   @Patch(':id/widgets/:widgetId')

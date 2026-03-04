@@ -10,8 +10,8 @@ import { GcpStatus } from '@prisma/client';
 import { OrganizationsService } from '../organizations/organizations.service';
 import { MetricDto, ReportConfigDto } from './reports.types';
 
-// Unicode letters, digits, underscore — safe for backtick-quoted column names
-const SAFE_COLUMN_RE = /^[\p{L}\p{N}_]+$/u;
+// Unicode letters, digits, underscore — safe for backtick-quoted column names; dots allowed for nested field paths
+const SAFE_COLUMN_RE = /^[\p{L}\p{N}_]+(?:\.[\p{L}\p{N}_]+)*$/u;
 // Unicode letters, digits, underscore, hyphens, spaces — safe for backtick-quoted dataset/table identifiers
 const SAFE_IDENTIFIER_RE = /^[\p{L}\p{N}_ -]+$/u;
 
@@ -27,6 +27,12 @@ function assertColumn(value: string): void {
   }
 }
 
+// Backtick-quote each path segment individually so nested fields like
+// `parent`.`child` are valid BigQuery syntax (not `parent.child`).
+function quoteColumn(column: string): string {
+  return column.split('.').map((seg) => `\`${seg}\``).join('.');
+}
+
 // Try to parse a string value as a number so BigQuery receives the correct type
 // when comparing against numeric columns. Falls back to the original string.
 function coerceScalar(v: string): string | number {
@@ -35,7 +41,7 @@ function coerceScalar(v: string): string | number {
 }
 
 function granularityExpr(column: string, granularity: string[] | null): string {
-  const col = `\`${column}\``;
+  const col = quoteColumn(column);
   if (!granularity || granularity.length === 0) return col;
 
   const hasDay   = granularity.includes('day');
@@ -101,7 +107,7 @@ function buildQuery(config: ReportConfigDto): QueryPlan {
 
   // Metrics
   metrics.forEach((m: MetricDto, i: number) => {
-    const col = m.column !== null ? `\`${m.column}\`` : '*';
+    const col = m.column !== null ? quoteColumn(m.column) : '*';
     const expr = m.operation === 'count_distinct'
       ? `COUNT(DISTINCT ${col})`
       : `${m.operation.toUpperCase()}(${col})`;
@@ -120,7 +126,7 @@ function buildQuery(config: ReportConfigDto): QueryPlan {
 
   // Exclude NULLs in groupBy unless explicitly included
   if (groupBy && !groupByIncludeEmpty) {
-    whereClauses.push(`\`${groupBy}\` IS NOT NULL`);
+    whereClauses.push(`${quoteColumn(groupBy)} IS NOT NULL`);
   }
 
   // Filter conditions → parameterized WHERE clauses
@@ -136,7 +142,7 @@ function buildQuery(config: ReportConfigDto): QueryPlan {
     ) return;
 
     assertColumn(condition.column);
-    const col = `\`${condition.column}\``;
+    const col = quoteColumn(condition.column);
     const p = `f${i}`;
 
     switch (condition.operator) {
@@ -264,6 +270,36 @@ export class ReportsService {
   private readonly logger = new Logger(ReportsService.name);
 
   constructor(private readonly organizationsService: OrganizationsService) {}
+
+  async batchRunQuery(clerkOrgId: string, queries: ReportConfigDto[]): Promise<(unknown[] | null)[]> {
+    const organization = await this.organizationsService.getByClerkOrgId(clerkOrgId);
+
+    if (!organization) {
+      throw new NotFoundException('Organization not found');
+    }
+
+    if (organization.gcpStatus !== GcpStatus.active) {
+      throw new ForbiddenException(
+        `Organization GCP project is not active (status: ${organization.gcpStatus})`,
+      );
+    }
+
+    const bigquery = new BigQuery({ projectId: organization.gcpProjectId! });
+
+    const settled = await Promise.allSettled(
+      queries.map(async (config) => {
+        const { sql, params, types } = buildQuery(config);
+        const [rows] = await bigquery.query({
+          query: sql,
+          params: Object.keys(params).length > 0 ? params : undefined,
+          types: Object.keys(types).length > 0 ? types : undefined,
+        });
+        return serialise(rows) as unknown[];
+      }),
+    );
+
+    return settled.map((r) => (r.status === 'fulfilled' ? r.value : null));
+  }
 
   async runQuery(clerkOrgId: string, config: ReportConfigDto): Promise<unknown[]> {
     const organization = await this.organizationsService.getByClerkOrgId(clerkOrgId);

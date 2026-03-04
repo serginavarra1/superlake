@@ -164,3 +164,27 @@ export class UpdateWidgetDto {
   @IsInt()
   h?: number;
 }
+
+export class BatchUpdateWidgetItemDto {
+  @IsString()
+  id!: string;
+
+  @IsInt()
+  x!: number;
+
+  @IsInt()
+  y!: number;
+
+  @IsInt()
+  w!: number;
+
+  @IsInt()
+  h!: number;
+}
+
+export class BatchUpdateWidgetsDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => BatchUpdateWidgetItemDto)
+  widgets!: BatchUpdateWidgetItemDto[];
+}
