@@ -8,7 +8,9 @@
       "Bash(pnpm prisma:generate:*)",
       "Read(//c/Users/sergi/Desktop/**)",
       "Bash(/bin/sh -c 'echo $PATH')",
-      "Bash(npx shadcn@latest add calendar:*)"
+      "Bash(npx shadcn@latest add calendar:*)",
+      "WebFetch(domain:mastra.ai)",
+      "WebSearch"
     ]
   }
 }
