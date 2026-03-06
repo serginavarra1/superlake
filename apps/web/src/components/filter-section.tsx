@@ -33,7 +33,7 @@ export function FilterSection() {
   return (
     <div className="px-4 py-3">
       <div className="rounded-xl border p-3">
-        <p className="mb-2 text-xs text-muted-foreground">Filtrar</p>
+        <p className="mb-2 text-xs text-muted-foreground">Filter</p>
 
         {filters.length > 0 && (
           <div className="mb-2 flex flex-col">
@@ -43,7 +43,7 @@ export function FilterSection() {
                 className="group flex items-center gap-2 rounded-md px-1.5 py-1 mb-1 bg-muted/40 hover:bg-muted/90"
               >
                 <ListFilter className="size-3.5 shrink-0 text-muted-foreground mx-1" />
-                <span className="flex-1 truncate text-sm">{filter.name || "Sin nombre"}</span>
+                <span className="flex-1 truncate text-sm">{filter.name || "Unnamed"}</span>
                 <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
                   <Button
                     variant="ghost"
@@ -75,7 +75,7 @@ export function FilterSection() {
           onClick={handleAdd}
         >
           <Plus className="mr-1 size-4" />
-          Añadir filtro
+          Add filter
         </Button>
       </div>
 

@@ -1,3 +1,4 @@
+import { Table2 } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { DatasetExplorer } from '@/components/dataset-explorer'
 import { TableDetailsPanel } from '@/components/table-details-panel'
@@ -32,8 +33,14 @@ export default function DataStudioPage() {
           {selected ? (
             <TableDetailsPanel datasetId={selected.datasetId} tableId={selected.tableId} />
           ) : (
-            <div className="flex h-full items-center justify-center">
-              <p className="text-sm text-muted-foreground">Select a table to view its details.</p>
+            <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+              <div className="rounded-full bg-muted p-4">
+                <Table2 className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">No table selected</p>
+                <p className="text-xs text-muted-foreground mt-1">Select a table from the explorer to view its details.</p>
+              </div>
             </div>
           )}
         </ResizablePanel>

@@ -76,20 +76,20 @@ function ColumnIcon({ type, className }: { type: string; className?: string }) {
 type OperatorDef = { value: FilterOperator; label: string }
 
 const ALL_OPERATORS: OperatorDef[] = [
-  { value: "equals",               label: "Es igual a" },
-  { value: "not_equals",           label: "No es igual a" },
-  { value: "contains",             label: "Contiene" },
-  { value: "not_contains",         label: "No contiene" },
-  { value: "starts_with",          label: "Empieza por" },
-  { value: "ends_with",            label: "Termina en" },
-  { value: "greater_than",         label: "Mayor que" },
-  { value: "less_than",            label: "Menor que" },
-  { value: "greater_than_or_equal", label: "Mayor o igual que" },
-  { value: "less_than_or_equal",   label: "Menor o igual que" },
-  { value: "in",                   label: "En la lista" },
-  { value: "not_in",               label: "No está en la lista" },
-  { value: "is_null",              label: "Es nulo" },
-  { value: "is_not_null",          label: "No es nulo" },
+  { value: "equals",               label: "Equals" },
+  { value: "not_equals",           label: "Not equals" },
+  { value: "contains",             label: "Contains" },
+  { value: "not_contains",         label: "Does not contain" },
+  { value: "starts_with",          label: "Starts with" },
+  { value: "ends_with",            label: "Ends with" },
+  { value: "greater_than",         label: "Greater than" },
+  { value: "less_than",            label: "Less than" },
+  { value: "greater_than_or_equal", label: "Greater than or equal" },
+  { value: "less_than_or_equal",   label: "Less than or equal" },
+  { value: "in",                   label: "In list" },
+  { value: "not_in",               label: "Not in list" },
+  { value: "is_null",              label: "Is null" },
+  { value: "is_not_null",          label: "Is not null" },
 ]
 
 function operatorsForKind(kind: ReturnType<typeof columnKind>): OperatorDef[] {
@@ -121,6 +121,19 @@ function emptyFilter(): ReportFilter {
   return { id: crypto.randomUUID(), name: "", condition: emptyCondition() }
 }
 
+function generateFilterName(condition: FilterCondition): string {
+  if (!condition.column) return ""
+  const operatorLabel = ALL_OPERATORS.find((o) => o.value === condition.operator)?.label
+  if (!operatorLabel) return condition.column
+  const isNullOp = condition.operator === "is_null" || condition.operator === "is_not_null"
+  if (isNullOp) return `${condition.column} ${operatorLabel}`
+  if (!condition.value) return `${condition.column} ${operatorLabel}`
+  if (Array.isArray(condition.value)) {
+    return `${condition.column} ${operatorLabel} ${condition.value.join(", ")}`
+  }
+  return `${condition.column} ${operatorLabel} ${condition.value}`
+}
+
 // ─── Sub-pickers ─────────────────────────────────────────────────────────────
 
 function ColumnPickerInline({
@@ -141,16 +154,16 @@ function ColumnPickerInline({
         <Button variant="outline" size="sm" className="min-w-0 flex-1 justify-between font-normal">
           <span className="flex items-center gap-1.5 truncate">
             {field ? <ColumnIcon type={field.type} /> : null}
-            <span className="truncate">{value ?? "Columna…"}</span>
+            <span className="truncate">{value ?? "Column…"}</span>
           </span>
           <ChevronsUpDown className="ml-1 size-3.5 shrink-0 text-muted-foreground" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-64 p-0" align="start">
         <Command>
-          <CommandInput placeholder="Buscar columna…" />
+          <CommandInput placeholder="Search column…" />
           <CommandList>
-            <CommandEmpty>No hay columnas.</CommandEmpty>
+            <CommandEmpty>No columns found.</CommandEmpty>
             <CommandGroup>
               {schema?.map((f) => (
                 <CommandItem key={f.name} value={f.name} onSelect={() => { onChange(f.name); setOpen(false) }}>
@@ -179,7 +192,7 @@ function OperatorPicker({
 }) {
   const [open, setOpen] = React.useState(false)
   const ops = operatorsForKind(kind)
-  const label = ALL_OPERATORS.find((o) => o.value === value)?.label ?? "Operador…"
+  const label = ALL_OPERATORS.find((o) => o.value === value)?.label ?? "Operator…"
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -225,7 +238,7 @@ function DateValueInput({
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className="min-w-0 flex-1 justify-start font-normal">
           <CalendarIcon className="mr-1.5 size-3.5 text-muted-foreground" />
-          <span className="truncate">{value ?? "Fecha…"}</span>
+          <span className="truncate">{value ?? "Date…"}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="start">
@@ -277,7 +290,7 @@ function AutocompleteValueInput({
         <div className="min-w-0 flex-1">
           <Input
             value={inputVal}
-            placeholder="Valor…"
+            placeholder="Value…"
             className="h-8 text-sm"
             onChange={(e) => {
               setInputVal(e.target.value)
@@ -349,7 +362,7 @@ function MultiSelectValueInput({
             className="h-auto min-h-8 w-full justify-start font-normal"
           >
             {value.length === 0 ? (
-              <span className="text-muted-foreground">Seleccionar valores…</span>
+              <span className="text-muted-foreground">Select values…</span>
             ) : (
               <div className="flex flex-wrap gap-1">
                 {value.map((v) => (
@@ -373,9 +386,9 @@ function MultiSelectValueInput({
         </PopoverTrigger>
         <PopoverContent className="w-64 p-0" align="start">
           <Command>
-            <CommandInput placeholder="Buscar…" />
+            <CommandInput placeholder="Search…" />
             <CommandList>
-              <CommandEmpty>Sin resultados.</CommandEmpty>
+              <CommandEmpty>No results.</CommandEmpty>
               <CommandGroup>
                 {options.map((opt) => (
                   <CommandItem key={opt} value={opt} onSelect={() => toggle(opt)}>
@@ -484,32 +497,41 @@ export function FilterDialog({ open, onOpenChange, initialFilter, onSave }: Filt
   const schema = flattenSchema(tableDetails?.schema ?? []) as SchemaField[] | undefined
 
   const [draft, setDraft] = React.useState<ReportFilter>(emptyFilter)
+  const nameManuallyEdited = React.useRef(false)
 
   // Reset draft whenever the dialog opens
   React.useEffect(() => {
     if (open) {
+      nameManuallyEdited.current = false
       setDraft(initialFilter ? JSON.parse(JSON.stringify(initialFilter)) : emptyFilter())
     }
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function updateCondition(updates: Partial<Omit<FilterCondition, "id">>) {
-    setDraft((d) => ({ ...d, condition: { ...d.condition, ...updates } }))
+    setDraft((d) => {
+      const newCondition = { ...d.condition, ...updates }
+      const name = nameManuallyEdited.current ? d.name : generateFilterName(newCondition)
+      return { ...d, condition: newCondition, name }
+    })
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl gap-4">
         <DialogHeader>
-          <DialogTitle>{initialFilter ? "Editar filtro" : "Nuevo filtro"}</DialogTitle>
+          <DialogTitle>{initialFilter ? "Edit filter" : "New filter"}</DialogTitle>
         </DialogHeader>
 
         {/* Filter name */}
         <div>
-          <p className="mb-1.5 text-xs text-muted-foreground">Nombre</p>
+          <p className="mb-1.5 text-xs text-muted-foreground">Name</p>
           <Input
-            placeholder="Nombre del filtro…"
+            placeholder="Filter name…"
             value={draft.name}
-            onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
+            onChange={(e) => {
+              nameManuallyEdited.current = true
+              setDraft((d) => ({ ...d, name: e.target.value }))
+            }}
           />
         </div>
 
@@ -524,14 +546,14 @@ export function FilterDialog({ open, onOpenChange, initialFilter, onSave }: Filt
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
+            Cancel
           </Button>
           <Button
             type="button"
             onClick={() => onSave(draft)}
             disabled={!draft.name.trim()}
           >
-            Guardar
+            Save
           </Button>
         </DialogFooter>
       </DialogContent>

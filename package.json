@@ -4,9 +4,11 @@
   "scripts": {
     "dev:web": "pnpm --filter web dev",
     "dev:api": "pnpm --filter api start:dev",
+    "dev:agent": "pnpm --filter agent dev",
     "build": "pnpm -r build",
     "build:web": "pnpm --filter web build",
     "build:api": "pnpm --filter api build",
+    "build:agent": "pnpm --filter agent build",
     "dev": "bash scripts/dev.sh",
     "lint": "pnpm -r lint"
   },

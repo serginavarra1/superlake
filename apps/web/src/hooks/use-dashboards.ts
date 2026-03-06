@@ -42,9 +42,8 @@ export function useUpdateDashboard() {
         method: 'PATCH',
         body: JSON.stringify({ title }),
       }).then((res) => res.data),
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dashboards'] })
-      queryClient.setQueryData(['dashboards', data.id], { data })
     },
   })
 }
@@ -105,6 +104,17 @@ export function useDeleteWidget(dashboardId: string) {
       apiFetch(`/dashboards/${dashboardId}/widgets/${widgetId}`, { method: 'DELETE' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['dashboards', dashboardId] })
+    },
+  })
+}
+
+export function useDuplicateDashboard() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiFetch<{ data: Dashboard }>(`/dashboards/${id}/duplicate`, { method: 'POST' }).then((res) => res.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboards'] })
     },
   })
 }

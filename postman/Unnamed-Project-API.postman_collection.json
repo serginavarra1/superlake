@@ -257,6 +257,117 @@
       ]
     },
     {
+      "name": "Agent",
+      "item": [
+        {
+          "name": "Send Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"{{message}}\"\n    }\n  ],\n  \"resourceId\": \"{{user_id}}\",\n  \"threadId\": \"{{thread_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{mastra_url}}/api/agents/analytics-agent/generate",
+              "host": ["{{mastra_url}}"],
+              "path": ["api", "agents", "analytics-agent", "generate"]
+            },
+            "description": "Send a message to the analytics agent and get a response.\n\nBody:\n- messages: Array of message objects with role and content\n- resourceId: The user's ID (used to scope memory)\n- threadId: (optional) Thread ID to continue an existing conversation\n\nRequires a valid Clerk Bearer token."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"text\": \"Here is the analysis you requested...\",\n  \"threadId\": \"thread_abc123\"\n}",
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has text', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('text');",
+                  "});",
+                  "",
+                  "// Save threadId for subsequent requests",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.threadId) {",
+                  "    pm.collectionVariables.set('thread_id', jsonData.threadId);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Threads",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{mastra_url}}/api/memory/threads?agentId=analytics-agent",
+              "host": ["{{mastra_url}}"],
+              "path": ["api", "memory", "threads"],
+              "query": [
+                {
+                  "key": "agentId",
+                  "value": "analytics-agent"
+                }
+              ]
+            },
+            "description": "List all conversation threads for the analytics agent.\n\nQuery params:\n- agentId: The agent ID to filter threads by\n\nRequires a valid Clerk Bearer token."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"threads\": [\n    {\n      \"id\": \"thread_abc123\",\n      \"resourceId\": \"user_2abc123\",\n      \"title\": \"Sales analysis Q1\",\n      \"createdAt\": \"2024-06-01T12:00:00.000Z\",\n      \"updatedAt\": \"2024-06-01T12:30:00.000Z\"\n    }\n  ]\n}",
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has threads array', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.threads).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Webhooks",
       "item": [
         {

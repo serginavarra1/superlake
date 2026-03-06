@@ -138,6 +138,35 @@ export class DashboardsService {
     );
   }
 
+  async duplicate(clerkOrgId: string, id: string) {
+    const source = await this.prisma.dashboard.findFirst({
+      where: { id, organization: { clerkOrgId } },
+      include: { widgets: { orderBy: { createdAt: 'asc' } } },
+    });
+
+    if (!source) {
+      throw new NotFoundException('Dashboard not found');
+    }
+
+    return this.prisma.dashboard.create({
+      data: {
+        title: `(Copy of) ${source.title}`,
+        organizationId: source.organizationId,
+        widgets: {
+          create: source.widgets.map((w) => ({
+            type: w.type,
+            config: w.config as unknown as Prisma.InputJsonValue,
+            x: w.x,
+            y: w.y,
+            w: w.w,
+            h: w.h,
+          })),
+        },
+      },
+      include: { widgets: { orderBy: { createdAt: 'asc' } } },
+    });
+  }
+
   async deleteWidget(clerkOrgId: string, dashboardId: string, widgetId: string) {
     const widget = await this.prisma.dashboardWidget.findFirst({
       where: { id: widgetId, dashboard: { id: dashboardId, organization: { clerkOrgId } } },

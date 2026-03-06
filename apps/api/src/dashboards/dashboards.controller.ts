@@ -26,6 +26,11 @@ export class DashboardsController {
     return this.dashboardsService.findOne(user.orgId!, id);
   }
 
+  @Post(':id/duplicate')
+  async duplicate(@CurrentUser() user: ClerkUser, @Param('id') id: string) {
+    return this.dashboardsService.duplicate(user.orgId!, id);
+  }
+
   @Patch(':id')
   async updateTitle(
     @CurrentUser() user: ClerkUser,
