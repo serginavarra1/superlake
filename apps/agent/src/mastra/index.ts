@@ -3,7 +3,9 @@ import { PinoLogger } from '@mastra/loggers';
 import { PostgresStore } from '@mastra/pg';
 import { MastraAuthClerk } from '@mastra/auth-clerk';
 import { Observability, DefaultExporter, CloudExporter, SensitiveDataFilter } from '@mastra/observability';
+import { MASTRA_RESOURCE_ID_KEY } from '@mastra/core/request-context';
 import { analyticsAgent } from './agents/analytics-agent';
+import { extractUserIdFromToken } from '../lib/jwt';
 
 export const mastra = new Mastra({
   workflows: { },
@@ -14,6 +16,23 @@ export const mastra = new Mastra({
       secretKey: process.env.CLERK_SECRET_KEY!,
       jwksUri: process.env.CLERK_JWKS_URI!,
     }),
+    middleware: [
+      {
+        path: '/api/*',
+        handler: async (c, next) => {
+          const userId = extractUserIdFromToken(c.req.header('Authorization'));
+
+          if (!userId) {
+            return c.json({ error: 'Unauthorized' }, 401);
+          }
+
+          const requestContext = c.get('requestContext');
+          requestContext.set(MASTRA_RESOURCE_ID_KEY, userId);
+
+          return next();
+        },
+      },
+    ],
   },
   storage: new PostgresStore({
     id: "mastra-storage",

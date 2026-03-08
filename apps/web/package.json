@@ -14,6 +14,7 @@
     "@clerk/themes": "^2.4.52",
     "@mastra/client-js": "^1.7.3",
     "@repo/shared": "workspace:*",
+    "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-query": "^5.90.21",
     "ag-charts-community": "^13.1.0",
@@ -31,8 +32,10 @@
     "react-day-picker": "^9.13.2",
     "react-dom": "^19.2.0",
     "react-grid-layout": "^2.2.2",
+    "react-markdown": "^10.1.0",
     "react-resizable-panels": "^4.6.4",
     "react-router-dom": "^7.6.0",
+    "remark-gfm": "^4.0.1",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.1.18"

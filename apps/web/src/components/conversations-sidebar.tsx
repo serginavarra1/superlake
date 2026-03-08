@@ -1,12 +1,13 @@
-import { MessageSquare, AlertCircle } from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
+import { MessageSquare, AlertCircle, Plus } from 'lucide-react'
 import { useConversations } from '@/hooks/use-conversations'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
+import { Button } from './ui/button'
 
 interface ConversationsSidebarProps {
   selectedThreadId: string | null
   onSelectThread: (threadId: string) => void
+  onNewConversation: () => void
 }
 
 function SidebarSkeleton() {
@@ -14,14 +15,14 @@ function SidebarSkeleton() {
     <div className="space-y-1 mt-2">
       {Array.from({ length: 5 }).map((_, i) => (
         <div key={i} className="flex items-center gap-2 px-2">
-          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-8 w-full" />
         </div>
       ))}
     </div>
   )
 }
 
-export function ConversationsSidebar({ selectedThreadId, onSelectThread }: ConversationsSidebarProps) {
+export function ConversationsSidebar({ selectedThreadId, onSelectThread, onNewConversation }: ConversationsSidebarProps) {
   const { data: threads, isLoading, error } = useConversations()
 
   return (
@@ -50,25 +51,29 @@ export function ConversationsSidebar({ selectedThreadId, onSelectThread }: Conve
                   key={thread.id}
                   onClick={() => onSelectThread(thread.id)}
                   className={cn(
-                    'flex w-full flex-col items-start gap-0.5 rounded-md px-3 py-2.5 text-sm transition-colors text-left',
+                    'flex w-full flex-col items-start gap-0.5 rounded-md px-3 py-2 text-sm transition-colors text-left',
                     isSelected
-                      ? 'bg-gray-100 text-accent-foreground'
+                      ? 'bg-gray-50 text-accent-foreground'
                       : 'hover:bg-gray-50',
                   )}
                 >
-                  <span className="truncate w-full font-medium">
+                  <span className="truncate w-full">
                     {thread.title || 'Untitled conversation'}
                   </span>
-                  {thread.createdAt && (
-                    <span className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(thread.createdAt), { addSuffix: true })}
-                    </span>
-                  )}
                 </button>
               )
             })}
           </div>
         )}
+      </div>
+      <div className="p-2 border-t">
+        <Button
+          onClick={onNewConversation}
+          className='w-full'
+        >
+          <Plus className="size-4" />
+          New conversation
+        </Button>
       </div>
     </div>
   )

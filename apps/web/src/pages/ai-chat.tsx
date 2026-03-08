@@ -1,6 +1,6 @@
-import { BotMessageSquare } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { ConversationsSidebar } from '@/components/conversations-sidebar'
+import { ChatInterface } from '@/components/chat-interface'
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -15,6 +15,10 @@ export default function AIChatPage() {
     setSearchParams({ thread: id })
   }
 
+  function handleNewConversation() {
+    setSearchParams({})
+  }
+
   return (
     <div className="h-[calc(100vh-4rem)]">
       <ResizablePanelGroup orientation="horizontal">
@@ -22,31 +26,15 @@ export default function AIChatPage() {
           <ConversationsSidebar
             selectedThreadId={threadId}
             onSelectThread={handleSelectThread}
+            onNewConversation={handleNewConversation}
           />
         </ResizablePanel>
         <ResizableHandle />
         <ResizablePanel>
-          {threadId ? (
-            <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-              <div className="rounded-full bg-muted p-4">
-                <BotMessageSquare className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">Conversation selected</p>
-                <p className="text-xs text-muted-foreground mt-1">Chat interface coming soon.</p>
-              </div>
-            </div>
-          ) : (
-            <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-              <div className="rounded-full bg-muted p-4">
-                <BotMessageSquare className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">No conversation selected</p>
-                <p className="text-xs text-muted-foreground mt-1">Select a conversation from the sidebar or start a new one.</p>
-              </div>
-            </div>
-          )}
+          <ChatInterface
+            threadId={threadId}
+            onThreadCreated={handleSelectThread}
+          />
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>

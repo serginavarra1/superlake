@@ -5,7 +5,7 @@ import { createMastraClient } from '@/lib/mastra-client'
 const AGENT_ID = 'analytics-agent'
 
 export function useConversations() {
-  const { isSignedIn, getToken } = useAuth()
+  const { getToken } = useAuth()
 
   return useQuery({
     queryKey: ['conversations'],
@@ -15,6 +15,6 @@ export function useConversations() {
       const result = await client.listMemoryThreads({ agentId: AGENT_ID })
       return result.threads
     },
-    enabled: !!isSignedIn,
+    enabled: true,
   })
 }
