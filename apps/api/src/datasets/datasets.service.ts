@@ -115,6 +115,69 @@ export class DatasetsService {
     };
   }
 
+  async deleteTable(
+    clerkOrgId: string,
+    datasetId: string,
+    tableId: string,
+  ): Promise<void> {
+    const organization =
+      await this.organizationsService.getByClerkOrgId(clerkOrgId);
+
+    if (!organization) {
+      throw new NotFoundException('Organization not found');
+    }
+
+    if (organization.gcpStatus !== GcpStatus.active) {
+      throw new ForbiddenException(
+        `Organization GCP project is not active (status: ${organization.gcpStatus})`,
+      );
+    }
+
+    const bigquery = new BigQuery({ projectId: organization.gcpProjectId! });
+    await bigquery.dataset(datasetId).table(tableId).delete();
+  }
+
+  async updateTable(
+    clerkOrgId: string,
+    datasetId: string,
+    tableId: string,
+    dto: { description?: string; fieldDescriptions?: { path: string; description: string }[] },
+  ): Promise<void> {
+    const organization =
+      await this.organizationsService.getByClerkOrgId(clerkOrgId);
+
+    if (!organization) {
+      throw new NotFoundException('Organization not found');
+    }
+
+    if (organization.gcpStatus !== GcpStatus.active) {
+      throw new ForbiddenException(
+        `Organization GCP project is not active (status: ${organization.gcpStatus})`,
+      );
+    }
+
+    const bigquery = new BigQuery({ projectId: organization.gcpProjectId! });
+    const table = bigquery.dataset(datasetId).table(tableId);
+    const [metadata] = await table.getMetadata();
+
+    const updates: Record<string, any> = {};
+
+    if (dto.description !== undefined) {
+      updates.description = dto.description;
+    }
+
+    if (dto.fieldDescriptions && dto.fieldDescriptions.length > 0) {
+      const descMap = Object.fromEntries(
+        dto.fieldDescriptions.map((f) => [f.path, f.description]),
+      );
+      updates.schema = {
+        fields: patchFieldDescriptions(metadata.schema?.fields ?? [], descMap),
+      };
+    }
+
+    await table.setMetadata(updates);
+  }
+
   async getDistinctValues(
     clerkOrgId: string,
     datasetId: string,
@@ -168,6 +231,20 @@ function quoteColumn(column: string): string {
 }
 // Unicode letters, digits, underscore, hyphens, spaces — safe for backtick-quoted dataset/table identifiers
 const SAFE_IDENTIFIER_RE = /^[\p{L}\p{N}_ -]+$/u;
+
+function patchFieldDescriptions(
+  fields: any[],
+  descMap: Record<string, string>,
+  prefix = '',
+): any[] {
+  return fields.map((f) => {
+    const path = prefix ? `${prefix}.${f.name}` : f.name;
+    const patched = { ...f };
+    if (path in descMap) patched.description = descMap[path];
+    if (f.fields) patched.fields = patchFieldDescriptions(f.fields, descMap, path);
+    return patched;
+  });
+}
 
 function mapFields(fields: any[]): SchemaField[] {
   return fields.map((f) => ({

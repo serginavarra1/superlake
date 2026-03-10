@@ -5,7 +5,7 @@ import {
   useReportActions,
   type VisualizationType,
 } from "@/contexts/report-builder-context"
-import { useTableDetails } from "@/hooks/use-table-details"
+import { useTableDetails } from "@/hooks/use-table"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {

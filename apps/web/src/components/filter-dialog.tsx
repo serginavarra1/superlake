@@ -14,7 +14,7 @@ import {
   type ReportFilter,
 } from "@/contexts/report-builder-context"
 import { useReportConfig } from "@/contexts/report-builder-context"
-import { useTableDetails } from "@/hooks/use-table-details"
+import { useTableDetails } from "@/hooks/use-table"
 import { useDistinctColumnValues } from "@/hooks/use-distinct-column-values"
 import { flattenSchema } from "@/lib/report-utils"
 import { cn } from "@/lib/utils"

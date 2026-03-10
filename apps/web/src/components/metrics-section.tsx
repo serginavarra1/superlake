@@ -1,7 +1,7 @@
 import * as React from "react"
 import { Check, ChevronsUpDown, Plus, Trash } from "lucide-react"
 import { useReportConfig, useReportActions, type Metric, type OperationType } from "@/contexts/report-builder-context"
-import { useTableDetails } from "@/hooks/use-table-details"
+import { useTableDetails } from "@/hooks/use-table"
 import { flattenSchema } from "@/lib/report-utils"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"

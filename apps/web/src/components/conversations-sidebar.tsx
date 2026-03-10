@@ -1,8 +1,15 @@
-import { MessageSquare, AlertCircle, Plus } from 'lucide-react'
-import { useConversations } from '@/hooks/use-conversations'
+import { MessageSquare, AlertCircle, Plus, MoreHorizontal, Trash2 } from 'lucide-react'
+import { useConversations, useDeleteConversation } from '@/hooks/use-conversations'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { Button } from './ui/button'
+import { toast } from 'sonner'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 interface ConversationsSidebarProps {
   selectedThreadId: string | null
@@ -24,6 +31,18 @@ function SidebarSkeleton() {
 
 export function ConversationsSidebar({ selectedThreadId, onSelectThread, onNewConversation }: ConversationsSidebarProps) {
   const { data: threads, isLoading, error } = useConversations()
+  const deleteConversation = useDeleteConversation()
+
+  function handleDelete(threadId: string) {
+    deleteConversation.mutate(threadId, {
+      onSuccess: () => {
+        if (selectedThreadId === threadId) {
+          onNewConversation()
+        }
+      },
+      onError: () => toast.error('Failed to delete conversation'),
+    })
+  }
 
   return (
     <div className="flex h-full flex-col">
@@ -47,20 +66,43 @@ export function ConversationsSidebar({ selectedThreadId, onSelectThread, onNewCo
             {threads.map((thread) => {
               const isSelected = selectedThreadId === thread.id
               return (
-                <button
-                  key={thread.id}
-                  onClick={() => onSelectThread(thread.id)}
-                  className={cn(
-                    'flex w-full flex-col items-start gap-0.5 rounded-md px-3 py-2 text-sm transition-colors text-left',
-                    isSelected
-                      ? 'bg-gray-50 text-accent-foreground'
-                      : 'hover:bg-gray-50',
-                  )}
-                >
-                  <span className="truncate w-full">
-                    {thread.title || 'Untitled conversation'}
-                  </span>
-                </button>
+                <div key={thread.id} className="group relative flex items-center">
+                  <button
+                    onClick={() => onSelectThread(thread.id)}
+                    className={cn(
+                      'flex w-full flex-col items-start gap-0.5 rounded-md px-3 py-2 text-sm transition-colors text-left pr-8',
+                      isSelected
+                        ? 'bg-gray-50 text-accent-foreground'
+                        : 'hover:bg-gray-50',
+                    )}
+                  >
+                    <span className="truncate w-full">
+                      {thread.title || 'Untitled conversation'}
+                    </span>
+                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        className="absolute right-1 rounded-md p-1 hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreHorizontal className="size-4 text-muted-foreground" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDelete(thread.id)
+                        }}
+                      >
+                        <Trash2 className="size-4 text-destructive" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               )
             })}
           </div>

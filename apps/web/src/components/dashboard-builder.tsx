@@ -106,7 +106,7 @@ function WidgetCard({ widget, hovered, onEdit, onDelete, queryData, queryFetchin
 
 export default function DashboardBuilder() {
   const { id } = useParams<{ id: string }>()
-  const { data: dashboard } = useDashboard(id ?? "")
+  const { data: dashboard, error: dashboardError } = useDashboard(id ?? "")
   const updateDashboard = useUpdateDashboard()
   const addWidget = useAddWidget(id ?? "")
   const updateWidget = useUpdateWidget(id ?? "")
@@ -125,6 +125,10 @@ export default function DashboardBuilder() {
   const layoutLoadedRef = useRef(false)
   // Ref for debounced layout save timer
   const layoutSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (dashboardError) toast.error("Failed to load dashboard")
+  }, [dashboardError])
 
   useEffect(() => {
     if (dashboard?.title !== undefined) {
@@ -218,9 +222,13 @@ export default function DashboardBuilder() {
   }
 
   const widgets = dashboard?.widgets ?? []
-  const { data: batchData, isFetching: batchFetching } = useBatchReportQuery(
+  const { data: batchData, isFetching: batchFetching, error: batchError } = useBatchReportQuery(
     widgets.map((w) => ({ id: w.id, config: w.config as ReportConfig })),
   )
+
+  useEffect(() => {
+    if (batchError) toast.error("Failed to load widget data")
+  }, [batchError])
 
   // Ensure every widget has a layout entry — falls back to server dimensions
   // to avoid the brief window where a new widget has no matching layout item

@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch } from '@nestjs/common';
 import { DatasetsService } from './datasets.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ClerkUser } from '../auth/interfaces/clerk-user.interface';
@@ -19,6 +19,27 @@ export class DatasetsController {
     @Param('tableId') tableId: string,
   ) {
     return this.datasetsService.getTableDetails(user.orgId!, datasetId, tableId);
+  }
+
+  @Patch(':datasetId/tables/:tableId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async updateTable(
+    @CurrentUser() user: ClerkUser,
+    @Param('datasetId') datasetId: string,
+    @Param('tableId') tableId: string,
+    @Body() body: { description?: string; fieldDescriptions?: { path: string; description: string }[] },
+  ) {
+    await this.datasetsService.updateTable(user.orgId!, datasetId, tableId, body);
+  }
+
+  @Delete(':datasetId/tables/:tableId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteTable(
+    @CurrentUser() user: ClerkUser,
+    @Param('datasetId') datasetId: string,
+    @Param('tableId') tableId: string,
+  ) {
+    await this.datasetsService.deleteTable(user.orgId!, datasetId, tableId);
   }
 
   @Get(':datasetId/tables/:tableId/columns/:column/distinct-values')

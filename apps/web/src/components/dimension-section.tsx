@@ -1,5 +1,5 @@
 import { useReportConfig, useReportActions } from "@/contexts/report-builder-context"
-import { useTableDetails } from "@/hooks/use-table-details"
+import { useTableDetails } from "@/hooks/use-table"
 import { flattenSchema } from "@/lib/report-utils"
 import { ColumnPicker } from "@/components/column-picker"
 import { GranularityPicker } from "@/components/granularity-picker"
@@ -48,7 +48,7 @@ export function DimensionSection() {
           }}
         />
         {isDimDate && (
-          <GranularityPicker value={dimensionGranularity} onChange={actions.setDimensionGranularity} />
+          <GranularityPicker value={dimensionGranularity ?? ["day", "month", "year"]} onChange={actions.setDimensionGranularity} />
         )}
 
         <p className="mb-2 mt-3 text-xs text-muted-foreground">Group by</p>
@@ -64,7 +64,7 @@ export function DimensionSection() {
           }}
         />
         {isGroupByDate && (
-          <GranularityPicker value={groupByGranularity} onChange={actions.setGroupByGranularity} />
+          <GranularityPicker value={groupByGranularity ?? ["day", "month", "year"]} onChange={actions.setGroupByGranularity} />
         )}
 
         {groupBy && (

@@ -1,11 +1,24 @@
-import { AlertCircle, Table as TableIcon } from 'lucide-react'
-import { useTableDetails } from '@/hooks/use-table-details'
+import { useState } from 'react'
+import { AlertCircle, Pencil, Table as TableIcon, Trash2 } from 'lucide-react'
+import { useDeleteTable, useTableDetails } from '@/hooks/use-table'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { TableEditSheet } from '@/components/table-edit-sheet'
 import type { SchemaField, TableDetails } from '@/types/api'
 
 interface TableDetailsPanelProps {
   datasetId: string
   tableId: string
+  onDelete?: () => void
 }
 
 function formatBytes(bytes: number | null): string {
@@ -59,11 +72,15 @@ const modeColors: Record<string, string> = {
 function flattenFields(
   fields: SchemaField[],
   depth = 0,
-): { field: SchemaField; depth: number }[] {
-  return fields.flatMap((f) => [
-    { field: f, depth },
-    ...(f.fields ? flattenFields(f.fields, depth + 1) : []),
-  ])
+  prefix = '',
+): { field: SchemaField; depth: number; path: string }[] {
+  return fields.flatMap((f) => {
+    const path = prefix ? `${prefix}.${f.name}` : f.name
+    return [
+      { field: f, depth, path },
+      ...(f.fields ? flattenFields(f.fields, depth + 1, path) : []),
+    ]
+  })
 }
 
 function LoadingSkeleton() {
@@ -93,18 +110,80 @@ function LoadingSkeleton() {
   )
 }
 
-function TableDetailsContent({ details }: { details: TableDetails }) {
+function TableDetailsContent({ details, onDelete }: { details: TableDetails; onDelete?: () => void }) {
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [confirmText, setConfirmText] = useState('')
+  const [editOpen, setEditOpen] = useState(false)
+
+  const deleteMutation = useDeleteTable(details.datasetId, details.tableId, onDelete)
+
+  const flatFields = flattenFields(details.schema)
+
+  function handleOpenChange(open: boolean) {
+    setConfirmOpen(open)
+    if (!open) setConfirmText('')
+  }
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-4 p-4 shrink-0">
+      <div className="flex items-center gap-4 px-4 py-2 shrink-0">
         <h2 className="text-sm font-semibold">
           <span className="text-muted-foreground font-normal">{details.datasetId}</span>
           <span className="text-muted-foreground font-normal mx-2">/</span>
           {details.tableId}
         </h2>
         <TypeBadge type={details.type} />
+        <div className="ml-auto flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+            <Pencil className="size-3.5" />
+            Edit
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setConfirmOpen(true)}
+          >
+            <Trash2 className="size-3.5" />
+            Delete
+          </Button>
+        </div>
       </div>
+
+      {/* Delete dialog */}
+      <Dialog open={confirmOpen} onOpenChange={handleOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete table</DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. Type{' '}
+              <span className="font-semibold text-foreground">delete</span>{' '}
+              to confirm you want to delete{' '}
+              <span className="font-semibold text-foreground">{details.tableId}</span>.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
+            placeholder="delete"
+            autoFocus
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => handleOpenChange(false)} disabled={deleteMutation.isPending}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteMutation.mutate()}
+              disabled={deleteMutation.isPending || confirmText !== 'delete'}
+            >
+              {deleteMutation.isPending ? 'Deleting…' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <TableEditSheet details={details} open={editOpen} onOpenChange={setEditOpen} />
 
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto px-4 space-y-4">
@@ -154,27 +233,28 @@ function TableDetailsContent({ details }: { details: TableDetails }) {
           {details.schema.length === 0 ? (
             <p className="text-sm text-muted-foreground">No schema available.</p>
           ) : (
-            <div className="rounded-lg border divide-y text-sm">
+            <div className="rounded-lg border divide-y text-sm overflow-hidden">
               <div className="flex items-center gap-4 px-4 py-2 bg-muted/40">
-                <span className="flex-1 text-sm text-muted-foreground font-medium">Name</span>
-                <span className="w-28 text-sm text-muted-foreground font-medium">Type</span>
-                <span className="w-24 text-sm text-muted-foreground font-medium">Mode</span>
+                <span className="w-48 shrink-0 text-sm text-muted-foreground font-medium">Name</span>
+                <span className="w-48 shrink-0 text-sm text-muted-foreground font-medium">Type</span>
+                <span className="w-48 shrink-0 text-sm text-muted-foreground font-medium">Mode</span>
+                <span className="flex-1 text-sm text-muted-foreground font-medium">Description</span>
               </div>
-              {flattenFields(details.schema).map(({ field, depth }, i) => (
+              {flatFields.map(({ field, depth }, i) => (
                 <div
                   key={i}
-                  className="flex items-start gap-4 py-2 pr-4"
-                  style={{ paddingLeft: `${depth * 16 + 16}px` }}
+                  className="flex items-center gap-4 py-2 px-4 pr-4"
                 >
-                  <div className="flex-1 min-w-0">
-                    <span className="font-mono text-sm font-medium">{field.name}</span>
-                    {field.description && (
-                      <span className="text-sm text-muted-foreground block">{field.description}</span>
-                    )}
-                  </div>
-                  <span className="w-28 font-mono text-sm text-muted-foreground shrink-0">{field.type}</span>
-                  <span className={`w-24 text-sm shrink-0 ${modeColors[field.mode] ?? 'text-muted-foreground'}`}>
+                  <span
+                    className="w-48 shrink-0 font-mono text-sm font-medium truncate"
+                    style={{ paddingLeft: `${depth * 16}px` }}
+                  >{field.name}</span>
+                  <span className="w-48 shrink-0 font-mono text-sm text-muted-foreground">{field.type}</span>
+                  <span className={`w-48 shrink-0 text-sm ${modeColors[field.mode] ?? 'text-muted-foreground'}`}>
                     {field.mode}
+                  </span>
+                  <span className="flex-1 text-xs text-muted-foreground min-w-0">
+                    {field.description ?? ''}
                   </span>
                 </div>
               ))}
@@ -186,7 +266,7 @@ function TableDetailsContent({ details }: { details: TableDetails }) {
   )
 }
 
-export function TableDetailsPanel({ datasetId, tableId }: TableDetailsPanelProps) {
+export function TableDetailsPanel({ datasetId, tableId, onDelete }: TableDetailsPanelProps) {
   const { data, isLoading, error } = useTableDetails(datasetId, tableId)
 
   if (isLoading) return <LoadingSkeleton />
@@ -205,5 +285,5 @@ export function TableDetailsPanel({ datasetId, tableId }: TableDetailsPanelProps
 
   if (!data) return null
 
-  return <TableDetailsContent details={data} />
+  return <TableDetailsContent details={data} onDelete={onDelete} />
 }

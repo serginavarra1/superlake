@@ -19,6 +19,10 @@ export default function DataStudioPage() {
     setSearchParams({ dataset: datasetId, table: tableId })
   }
 
+  function handleTableDeleted() {
+    setSearchParams({})
+  }
+
   return (
     <div className="h-[calc(100vh-4rem)]">
       <ResizablePanelGroup orientation="horizontal">
@@ -31,7 +35,7 @@ export default function DataStudioPage() {
         <ResizableHandle />
         <ResizablePanel>
           {selected ? (
-            <TableDetailsPanel datasetId={selected.datasetId} tableId={selected.tableId} />
+            <TableDetailsPanel datasetId={selected.datasetId} tableId={selected.tableId} onDelete={handleTableDeleted} />
           ) : (
             <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
               <div className="rounded-full bg-muted p-4">
