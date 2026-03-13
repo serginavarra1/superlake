@@ -1,7 +1,21 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { DatasetsService } from './datasets.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ClerkUser } from '../auth/interfaces/clerk-user.interface';
+import { SchemaField } from './datasets.types';
 
 @Controller('datasets')
 export class DatasetsController {
@@ -10,6 +24,58 @@ export class DatasetsController {
   @Get()
   async listDatasets(@CurrentUser() user: ClerkUser) {
     return this.datasetsService.listDatasets(user.orgId!);
+  }
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  async createDataset(
+    @CurrentUser() user: ClerkUser,
+    @Body() body: { datasetId: string; location?: string; description?: string },
+  ) {
+    return this.datasetsService.createDataset(user.orgId!, body);
+  }
+
+  @Post(':datasetId/tables')
+  @HttpCode(HttpStatus.CREATED)
+  async createTable(
+    @CurrentUser() user: ClerkUser,
+    @Param('datasetId') datasetId: string,
+    @Body() body: { tableId: string; schema: SchemaField[]; description?: string },
+  ) {
+    return this.datasetsService.createTable(user.orgId!, datasetId, body);
+  }
+
+  @Post('/excel-meta')
+  @UseInterceptors(FileInterceptor('file'))
+  async getExcelMeta(
+    @CurrentUser() user: ClerkUser,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.datasetsService.getExcelMeta(user.orgId!, file.buffer);
+  }
+
+  @Post(':datasetId/tables/from-file')
+  @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(FileInterceptor('file'))
+  async createTableFromFile(
+    @CurrentUser() user: ClerkUser,
+    @Param('datasetId') datasetId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body()
+    body: {
+      tableId: string;
+      fileType: 'csv' | 'excel' | 'json';
+      description?: string;
+      sheet?: string;
+      startRow?: string;
+    },
+  ) {
+    return this.datasetsService.createTableFromFile(
+      user.orgId!,
+      datasetId,
+      { ...body, startRow: body.startRow ? parseInt(body.startRow, 10) : undefined },
+      file.buffer,
+    );
   }
 
   @Get(':datasetId/tables/:tableId')

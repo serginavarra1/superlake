@@ -1,9 +1,17 @@
 import { useState } from 'react'
-import { Database, Table, ChevronRight, ChevronDown, Eye, AlertCircle } from 'lucide-react'
+import { Database, Table, ChevronRight, ChevronDown, Eye, AlertCircle, Plus, FolderPlus, TableIcon } from 'lucide-react'
 import { useDatasets } from '@/hooks/use-datasets'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import type { DatasetInfo } from '@/types/api'
+import { DatasetCreateSheet } from './dataset-create-sheet'
+import { TableCreateSheet } from './table-create-sheet'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 interface SelectedTable {
   datasetId: string
@@ -93,13 +101,37 @@ interface DatasetExplorerProps {
 
 export function DatasetExplorer({ selectedTable, onSelectTable }: DatasetExplorerProps) {
   const { data: datasets, isLoading, error } = useDatasets()
+  const [createOpen, setCreateOpen] = useState(false)
+  const [createTableOpen, setCreateTableOpen] = useState(false)
 
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-2 border-b px-4 py-3">
         <Database className="size-4" />
         <h2 className="text-sm font-semibold">Datasets</h2>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="ml-auto rounded-md p-0.5 hover:bg-gray-100 transition-colors text-muted-foreground hover:text-foreground"
+              title="New"
+            >
+              <Plus className="size-3.5" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={() => setCreateOpen(true)}>
+              <FolderPlus className="size-4" />
+              Create dataset
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setCreateTableOpen(true)}>
+              <TableIcon className="size-4" />
+              Create table
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
+      <DatasetCreateSheet open={createOpen} onOpenChange={setCreateOpen} />
+      <TableCreateSheet open={createTableOpen} onOpenChange={setCreateTableOpen} />
       <div className="flex-1 overflow-y-auto p-2">
         {isLoading && <ExplorerSkeleton />}
         {error && (

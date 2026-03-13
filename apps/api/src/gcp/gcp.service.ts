@@ -4,8 +4,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ProjectsClient } from '@google-cloud/resource-manager';
 import { ServiceUsageClient } from '@google-cloud/service-usage';
 import { CloudBillingClient } from '@google-cloud/billing';
+import { Storage } from '@google-cloud/storage';
 import { GcpStatus } from '@prisma/client';
 import { createHash } from 'crypto';
+import { handleGcpError } from '../common/gcp-error';
 
 @Injectable()
 export class GcpService {
@@ -49,6 +51,8 @@ export class GcpService {
 
       await this.linkBillingAccount(project.projectId!);
       await this.enableBigQueryApi(project.projectId!);
+      await this.enableStorageApi(project.projectId!);
+      await this.createStagingBucket(project.projectId!);
 
       await this.prisma.organization.update({
         where: { clerkOrgId },
@@ -78,7 +82,7 @@ export class GcpService {
         },
       });
 
-      throw error;
+      handleGcpError(error);
     }
   }
 
@@ -126,7 +130,7 @@ export class GcpService {
         },
       });
 
-      throw error;
+      handleGcpError(error);
     }
   }
 
@@ -147,6 +151,24 @@ export class GcpService {
     });
 
     await operation.promise();
+  }
+
+  private async enableStorageApi(projectId: string): Promise<void> {
+    const [operation] = await this.serviceUsageClient.enableService({
+      name: `projects/${projectId}/services/storage.googleapis.com`,
+    });
+
+    await operation.promise();
+  }
+
+  private async createStagingBucket(projectId: string): Promise<void> {
+    const storage = new Storage({ projectId });
+    await storage.createBucket(`${projectId}-staging`, {
+      location: 'EU',
+      lifecycle: {
+        rule: [{ action: { type: 'Delete' }, condition: { age: 1 } }],
+      },
+    });
   }
 
   private generateProjectId(clerkOrgId: string): string {

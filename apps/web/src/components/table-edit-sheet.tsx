@@ -81,7 +81,7 @@ export function TableEditSheet({ details, open, onOpenChange }: TableEditSheetPr
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
           {/* Table description */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Description</label>
+            <div className="text-sm font-medium">Description</div>
             <textarea
               value={description}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
@@ -94,7 +94,7 @@ export function TableEditSheet({ details, open, onOpenChange }: TableEditSheetPr
           {/* Field descriptions — only editable for regular tables */}
           {flatFields.length > 0 && details.type === 'TABLE' && (
             <div className="space-y-2">
-              <p className="text-sm font-medium">Field descriptions</p>
+              <div className="text-sm font-medium">Field descriptions</div>
               <div className="rounded-lg border divide-y">
                 {flatFields.map(({ field, depth, path }) => (
                   <div

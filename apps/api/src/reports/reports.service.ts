@@ -9,6 +9,7 @@ import { BigQuery } from '@google-cloud/bigquery';
 import { GcpStatus } from '@prisma/client';
 import { OrganizationsService } from '../organizations/organizations.service';
 import { MetricDto, ReportConfigDto } from './reports.types';
+import { handleGcpError } from '../common/gcp-error';
 
 // Unicode letters, digits, underscore — safe for backtick-quoted column names; dots allowed for nested field paths
 const SAFE_COLUMN_RE = /^[\p{L}\p{N}_]+(?:\.[\p{L}\p{N}_]+)*$/u;
@@ -298,7 +299,11 @@ export class ReportsService {
       }),
     );
 
-    return settled.map((r) => (r.status === 'fulfilled' ? r.value : null));
+    return settled.map((r) => {
+      if (r.status === 'fulfilled') return r.value;
+      this.logger.error('Batch query failed', r.reason instanceof Error ? r.reason.stack : String(r.reason));
+      return null;
+    });
   }
 
   async runQuery(clerkOrgId: string, config: ReportConfigDto): Promise<unknown[]> {
@@ -318,12 +323,15 @@ export class ReportsService {
     this.logger.debug(`Running report query:\n${sql}`);
 
     const bigquery = new BigQuery({ projectId: organization.gcpProjectId! });
-    const [rows] = await bigquery.query({
-      query: sql,
-      params: Object.keys(params).length > 0 ? params : undefined,
-      types: Object.keys(types).length > 0 ? types : undefined,
-    });
-
-    return serialise(rows) as unknown[];
+    try {
+      const [rows] = await bigquery.query({
+        query: sql,
+        params: Object.keys(params).length > 0 ? params : undefined,
+        types: Object.keys(types).length > 0 ? types : undefined,
+      });
+      return serialise(rows) as unknown[];
+    } catch (error) {
+      handleGcpError(error);
+    }
   }
 }
