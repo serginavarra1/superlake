@@ -22,8 +22,22 @@ export interface Dashboard {
   id: string
   title: string
   widgets: DashboardWidget[]
+  isFavourite: boolean
   createdAt: string
   updatedAt: string
+}
+
+export interface FavouriteDashboard {
+  id: string
+  title: string
+  updatedAt: string
+}
+
+export interface HomeStats {
+  reportsCount: number
+  datasetsCount: number
+  tablesCount: number
+  favouriteDashboards: FavouriteDashboard[]
 }
 
 export type GcpStatus =
@@ -88,4 +102,9 @@ export interface TableDetails {
     fields: string[]
   }
   viewQuery?: string
+}
+
+export interface TableRowsResult {
+  rows: Record<string, unknown>[]
+  totalRows: number
 }

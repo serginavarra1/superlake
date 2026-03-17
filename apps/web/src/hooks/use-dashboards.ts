@@ -108,6 +108,17 @@ export function useDeleteWidget(dashboardId: string) {
   })
 }
 
+export function useToggleFavourite() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiFetch<{ isFavourite: boolean }>(`/dashboards/${id}/favourite`, { method: 'POST' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboards'] })
+    },
+  })
+}
+
 export function useDuplicateDashboard() {
   const queryClient = useQueryClient()
   return useMutation({

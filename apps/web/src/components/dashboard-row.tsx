@@ -1,8 +1,9 @@
-import { LayoutGrid, MoreHorizontal, Trash2, Pencil, Copy } from "lucide-react"
+import { LayoutGrid, MoreHorizontal, Trash2, Pencil, Copy, Star } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import type { Dashboard } from "@/types/api"
@@ -44,9 +45,10 @@ interface DashboardRowProps {
   onRename: () => void
   onDuplicate: () => void
   onDelete: () => void
+  onToggleFavourite: () => void
 }
 
-export function DashboardRow({ dashboard, onClick, onRename, onDuplicate, onDelete }: DashboardRowProps) {
+export function DashboardRow({ dashboard, onClick, onRename, onDuplicate, onDelete, onToggleFavourite }: DashboardRowProps) {
   return (
     <tr
       className="border-b hover:bg-muted/50 cursor-pointer group"
@@ -58,6 +60,9 @@ export function DashboardRow({ dashboard, onClick, onRename, onDuplicate, onDele
             <LayoutGrid className="size-3.5" />
           </span>
           <span className="font-medium">{dashboard.title || "Untitled"}</span>
+          {dashboard.isFavourite && (
+            <Star className="size-3.5 fill-yellow-400 text-yellow-400 shrink-0" />
+          )}
         </span>
       </td>
       <td className="px-4 py-3 text-muted-foreground">{formatDate(dashboard.createdAt)}</td>
@@ -72,6 +77,15 @@ export function DashboardRow({ dashboard, onClick, onRename, onDuplicate, onDele
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation()
+                onToggleFavourite()
+              }}
+            >
+              <Star className="size-4" />
+              {dashboard.isFavourite ? "Remove from favourites" : "Add to favourites"}
+            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation()
@@ -90,6 +104,7 @@ export function DashboardRow({ dashboard, onClick, onRename, onDuplicate, onDele
               <Copy className="size-4" />
               Duplicate
             </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem
               className="text-destructive focus:text-destructive"
               onClick={(e) => {

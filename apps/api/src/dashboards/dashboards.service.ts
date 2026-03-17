@@ -7,11 +7,40 @@ import { BatchUpdateWidgetsDto, CreateDashboardDto, CreateWidgetDto, UpdateDashb
 export class DashboardsService {
   constructor(private prisma: PrismaService) {}
 
-  async list(clerkOrgId: string) {
-    return this.prisma.dashboard.findMany({
-      where: { organization: { clerkOrgId } },
-      orderBy: { createdAt: 'desc' },
+  async list(clerkOrgId: string, clerkUserId: string) {
+    const [dashboards, favs] = await Promise.all([
+      this.prisma.dashboard.findMany({
+        where: { organization: { clerkOrgId } },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.userFavourite.findMany({
+        where: { clerkUserId, dashboard: { organization: { clerkOrgId } } },
+        select: { dashboardId: true },
+      }),
+    ]);
+    const favSet = new Set(favs.map((f) => f.dashboardId));
+    return dashboards.map((d) => ({ ...d, isFavourite: favSet.has(d.id) }));
+  }
+
+  async toggleFavourite(clerkOrgId: string, clerkUserId: string, dashboardId: string) {
+    const dashboard = await this.prisma.dashboard.findFirst({
+      where: { id: dashboardId, organization: { clerkOrgId } },
     });
+    if (!dashboard) throw new NotFoundException('Dashboard not found');
+
+    const existing = await this.prisma.userFavourite.findUnique({
+      where: { clerkUserId_dashboardId: { clerkUserId, dashboardId } },
+    });
+
+    if (existing) {
+      await this.prisma.userFavourite.delete({
+        where: { clerkUserId_dashboardId: { clerkUserId, dashboardId } },
+      });
+      return { isFavourite: false };
+    } else {
+      await this.prisma.userFavourite.create({ data: { clerkUserId, dashboardId } });
+      return { isFavourite: true };
+    }
   }
 
   async create(clerkOrgId: string, dto: CreateDashboardDto) {

@@ -12,7 +12,7 @@ import { MetricDto, ReportConfigDto } from './reports.types';
 import { handleGcpError } from '../common/gcp-error';
 
 // Unicode letters, digits, underscore — safe for backtick-quoted column names; dots allowed for nested field paths
-const SAFE_COLUMN_RE = /^[\p{L}\p{N}_]+(?:\.[\p{L}\p{N}_]+)*$/u;
+const SAFE_COLUMN_RE = /^[\p{L}\p{N}_ ]+(?:\.[\p{L}\p{N}_ ]+)*$/u;
 // Unicode letters, digits, underscore, hyphens, spaces — safe for backtick-quoted dataset/table identifiers
 const SAFE_IDENTIFIER_RE = /^[\p{L}\p{N}_ -]+$/u;
 

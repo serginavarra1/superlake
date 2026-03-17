@@ -34,7 +34,7 @@ export const ChatInput = memo(function ChatInput({
   return (
     <div
       className={cn(
-        'flex items-end items-center gap-2 rounded-4xl border bg-white p-2 pl-6 shadow-sm focus-within:ring-1 focus-within:ring-ring',
+        'flex items-end items-center gap-2 rounded-4xl border bg-white p-2 pl-6 focus-within:ring-1 focus-within:ring-ring',
         className,
       )}
     >

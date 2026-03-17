@@ -2,7 +2,7 @@ import { useMemo, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 import { Calendar, LayoutGrid } from "lucide-react"
-import { useDashboards, useCreateDashboard, useDeleteDashboard, useUpdateDashboard, useDuplicateDashboard } from "@/hooks/use-dashboards"
+import { useDashboards, useCreateDashboard, useDeleteDashboard, useUpdateDashboard, useDuplicateDashboard, useToggleFavourite } from "@/hooks/use-dashboards"
 import type { Dashboard } from "@/types/api"
 import { DashboardsToolbar } from "@/components/dashboards-toolbar"
 import { DashboardRow } from "@/components/dashboard-row"
@@ -38,6 +38,7 @@ export default function ReportsPage() {
   const deleteDashboard = useDeleteDashboard()
   const updateDashboard = useUpdateDashboard()
   const duplicateDashboard = useDuplicateDashboard()
+  const toggleFavourite = useToggleFavourite()
 
   const sorted = useMemo(() => {
     const filtered = search
@@ -147,6 +148,9 @@ export default function ReportsPage() {
                   onError: () => toast.error("Failed to duplicate dashboard"),
                 })}
                 onDelete={() => setDeleteId(dashboard.id)}
+                onToggleFavourite={() => toggleFavourite.mutate(dashboard.id, {
+                  onError: () => toast.error("Failed to update favourites"),
+                })}
               />
             ))}
           </tbody>

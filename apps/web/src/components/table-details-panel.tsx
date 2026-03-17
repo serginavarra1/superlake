@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AlertCircle, Pencil, Table as TableIcon, Trash2 } from 'lucide-react'
+import { AlertCircle, Eye, Pencil, Table as TableIcon, Trash2 } from 'lucide-react'
 import { useDeleteTable, useTableDetails } from '@/hooks/use-table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { TableEditSheet } from '@/components/table-edit-sheet'
+import { TablePreviewDialog } from '@/components/table-preview-dialog'
 import type { SchemaField, TableDetails } from '@/types/api'
 
 interface TableDetailsPanelProps {
@@ -114,6 +115,7 @@ function TableDetailsContent({ details, onDelete }: { details: TableDetails; onD
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [confirmText, setConfirmText] = useState('')
   const [editOpen, setEditOpen] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
 
   const deleteMutation = useDeleteTable(details.datasetId, details.tableId, onDelete)
 
@@ -135,6 +137,10 @@ function TableDetailsContent({ details, onDelete }: { details: TableDetails; onD
         </h2>
         <TypeBadge type={details.type} />
         <div className="ml-auto flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)}>
+            <Eye className="size-3.5" />
+            Preview
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
             <Pencil className="size-3.5" />
             Edit
@@ -184,6 +190,14 @@ function TableDetailsContent({ details, onDelete }: { details: TableDetails; onD
       </Dialog>
 
       <TableEditSheet details={details} open={editOpen} onOpenChange={setEditOpen} />
+      <TablePreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        datasetId={details.datasetId}
+        tableId={details.tableId}
+        schema={details.schema}
+        totalRows={details.rowCount}
+      />
 
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto px-4 space-y-4">

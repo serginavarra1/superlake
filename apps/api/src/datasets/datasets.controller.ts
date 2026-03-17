@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -85,6 +86,23 @@ export class DatasetsController {
     @Param('tableId') tableId: string,
   ) {
     return this.datasetsService.getTableDetails(user.orgId!, datasetId, tableId);
+  }
+
+  @Get(':datasetId/tables/:tableId/rows')
+  async getTableRows(
+    @CurrentUser() user: ClerkUser,
+    @Param('datasetId') datasetId: string,
+    @Param('tableId') tableId: string,
+    @Query('startIndex') startIndex = '0',
+    @Query('maxResults') maxResults = '50',
+  ) {
+    return this.datasetsService.getTableRows(
+      user.orgId!,
+      datasetId,
+      tableId,
+      parseInt(startIndex, 10),
+      parseInt(maxResults, 10),
+    );
   }
 
   @Patch(':datasetId/tables/:tableId')

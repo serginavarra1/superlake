@@ -10,7 +10,12 @@ export class DashboardsController {
 
   @Get()
   async list(@CurrentUser() user: ClerkUser) {
-    return this.dashboardsService.list(user.orgId!);
+    return this.dashboardsService.list(user.orgId!, user.userId);
+  }
+
+  @Post(':id/favourite')
+  async toggleFavourite(@CurrentUser() user: ClerkUser, @Param('id') id: string) {
+    return this.dashboardsService.toggleFavourite(user.orgId!, user.userId, id);
   }
 
   @Post()
