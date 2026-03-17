@@ -64,6 +64,35 @@ export class DatasetsService {
     }
   }
 
+  async listDatasetIds(clerkOrgId: string): Promise<{ datasetId: string }[]> {
+    const org = await this.getActiveOrg(clerkOrgId);
+    const bigquery = new BigQuery({ projectId: org.gcpProjectId! });
+    try {
+      const [datasets] = await bigquery.getDatasets();
+      return datasets.map((dataset) => ({ datasetId: dataset.id! }));
+    } catch (error) {
+      handleGcpError(error);
+    }
+  }
+
+  async listTables(
+    clerkOrgId: string,
+    datasetId: string,
+  ): Promise<{ tableId: string; type: string }[]> {
+    const org = await this.getActiveOrg(clerkOrgId);
+    const bigquery = new BigQuery({ projectId: org.gcpProjectId! });
+
+    try {
+      const [tables] = await bigquery.dataset(datasetId).getTables();
+      return tables.map((table) => ({
+        tableId: table.id!,
+        type: table.metadata?.type ?? 'TABLE',
+      }));
+    } catch (error) {
+      handleGcpError(error);
+    }
+  }
+
   async getTableDetails(
     clerkOrgId: string,
     datasetId: string,

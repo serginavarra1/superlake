@@ -20,7 +20,8 @@ export const mastra = new Mastra({
       {
         path: '/api/*',
         handler: async (c, next) => {
-          const userId = extractUserIdFromToken(c.req.header('Authorization'));
+          const authHeader = c.req.header('Authorization');
+          const userId = extractUserIdFromToken(authHeader);
 
           if (!userId) {
             return c.json({ error: 'Unauthorized' }, 401);
@@ -28,6 +29,7 @@ export const mastra = new Mastra({
 
           const requestContext = c.get('requestContext');
           requestContext.set(MASTRA_RESOURCE_ID_KEY, userId);
+          requestContext.set('auth-token', authHeader!);
 
           return next();
         },

@@ -5,15 +5,64 @@ import { createMastraClient } from '@/lib/mastra-client'
 
 const AGENT_ID = 'analytics-agent'
 
+interface RawToolInvocation {
+  state?: string
+  toolCallId?: string
+  toolName?: string
+  args?: Record<string, unknown>
+  result?: unknown
+}
+
 interface RawMessagePart {
   type: string
   text?: string
+  toolInvocation?: RawToolInvocation
+  // legacy flat fields (just in case)
+  toolCallId?: string
+  toolName?: string
+  args?: Record<string, unknown>
+  result?: unknown
 }
 
 interface RawMessage {
   id?: string
   role?: string
   content?: unknown
+}
+
+function extractMessageParts(raw: unknown): StreamingPart[] {
+  // Unwrap Mastra format: { format, parts: [...], content: "..." }
+  if (typeof raw === 'object' && raw !== null && !Array.isArray(raw)) {
+    const obj = raw as Record<string, unknown>
+    if (Array.isArray(obj.parts)) return extractMessageParts(obj.parts)
+  }
+  if (Array.isArray(raw)) {
+    const parts: StreamingPart[] = []
+    for (const p of raw as RawMessagePart[]) {
+      if (p.type === 'text' && p.text) {
+        const last = parts[parts.length - 1]
+        if (last?.type === 'text') {
+          parts.splice(-1, 1, { ...last, content: last.content + p.text })
+        } else {
+          parts.push({ type: 'text', content: p.text })
+        }
+      } else if (p.type === 'tool-invocation' && p.toolInvocation?.toolCallId) {
+        const inv = p.toolInvocation
+        parts.push({
+          type: 'tool',
+          toolCallId: inv.toolCallId!,
+          toolName: inv.toolName ?? '',
+          args: inv.args ?? {},
+          result: inv.result,
+          status: 'done',
+        })
+      }
+      // 'step-start' and other unknown parts are ignored
+    }
+    return parts
+  }
+  const content = extractMessageContent(raw)
+  return content ? [{ type: 'text', content }] : []
 }
 
 function extractMessageContent(raw: unknown): string {
@@ -45,15 +94,38 @@ function extractMessageContent(raw: unknown): string {
     const obj = raw as Record<string, unknown>
     if (typeof obj.text === 'string') return obj.text
     if (typeof obj.content === 'string') return obj.content
-    return JSON.stringify(raw)
+    return ''
   }
   return String(raw ?? '')
 }
+
+export type ToolCallStatus = 'running' | 'done' | 'error'
+
+export interface ToolCall {
+  toolCallId: string
+  toolName: string
+  args: Record<string, unknown>
+  result?: unknown
+  status: ToolCallStatus
+}
+
+export interface TextPart {
+  type: 'text'
+  content: string
+}
+
+export interface ToolPart extends ToolCall {
+  type: 'tool'
+}
+
+export type StreamingPart = TextPart | ToolPart
 
 export interface ChatMessage {
   id: string
   role: 'user' | 'assistant'
   content: string
+  toolCalls?: ToolCall[]
+  parts?: StreamingPart[]
 }
 
 interface UseChatMessagesOptions {
@@ -68,7 +140,8 @@ export function useChatMessages({ threadId, onThreadCreated }: UseChatMessagesOp
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isStreaming, setIsStreaming] = useState(false)
-  const [streamingContent, setStreamingContent] = useState('')
+  const [streamingParts, setStreamingParts] = useState<StreamingPart[]>([])
+  const streamingPartsRef = useRef<StreamingPart[]>([])
   const [error, setError] = useState<Error | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   const isStreamingRef = useRef(false)
@@ -79,19 +152,31 @@ export function useChatMessages({ threadId, onThreadCreated }: UseChatMessagesOp
   // accidentally matches a threadId of `null`.
   const justCreatedThreadIdRef = useRef<string | undefined>(undefined)
 
+  const updateStreamingParts = useCallback((updater: (prev: StreamingPart[]) => StreamingPart[]) => {
+    setStreamingParts((prev) => {
+      const next = updater(prev)
+      streamingPartsRef.current = next
+      return next
+    })
+  }, [])
+
   // Shared cleanup: aborts the current stream and rolls back the optimistic user message.
   const clearStream = useCallback((removeOptimisticMessage = false) => {
     abortRef.current?.abort()
     isStreamingRef.current = false
     setIsStreaming(false)
-    setStreamingContent('')
+    setStreamingParts([])
+    streamingPartsRef.current = []
     if (removeOptimisticMessage && lastUserMessageIdRef.current) {
       setMessages((prev) => prev.filter((m) => m.id !== lastUserMessageIdRef.current))
     }
     lastUserMessageIdRef.current = null
   }, [])
 
-  // Load messages when threadId changes
+  // Load messages when threadId changes.
+  // NOTE: Both effects below depend on `justCreatedThreadIdRef`. React guarantees
+  // effects run in declaration order, so the first effect reads the flag and the
+  // second resets it. Do not reorder these two effects.
   useEffect(() => {
     if (!threadId) {
       setMessages([])
@@ -115,11 +200,15 @@ export function useChatMessages({ threadId, onThreadCreated }: UseChatMessagesOp
         if (cancelled) return
         const msgs: ChatMessage[] = (result.messages ?? [])
           .filter((m: RawMessage) => m.role === 'user' || m.role === 'assistant')
-          .map((m: RawMessage) => ({
-            id: m.id ?? crypto.randomUUID(),
-            role: m.role as 'user' | 'assistant',
-            content: extractMessageContent(m.content),
-          }))
+          .map((m: RawMessage) => {
+            const parts = m.role === 'assistant' ? extractMessageParts(m.content) : undefined
+            return {
+              id: m.id ?? crypto.randomUUID(),
+              role: m.role as 'user' | 'assistant',
+              content: extractMessageContent(m.content),
+              parts: parts && parts.length > 0 ? parts : undefined,
+            }
+          })
         setMessages(msgs)
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err : new Error(String(err)))
@@ -169,7 +258,7 @@ export function useChatMessages({ threadId, onThreadCreated }: UseChatMessagesOp
       lastUserMessageIdRef.current = userMessage.id
       isStreamingRef.current = true
       setIsStreaming(true)
-      setStreamingContent('')
+      updateStreamingParts(() => [])
       setError(null)
 
       let activeThreadId = threadId
@@ -188,42 +277,75 @@ export function useChatMessages({ threadId, onThreadCreated }: UseChatMessagesOp
           { memory: { thread: activeThreadId, resource: resourceId } },
         )
 
-        let accumulated = ''
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await response.processDataStream({
           onChunk: async (chunk: any) => {
             if (chunk.type === 'text-delta') {
-              accumulated += chunk.payload?.text ?? ''
-              setStreamingContent(accumulated)
+              const deltaText: string = chunk.payload?.text ?? chunk.text ?? ''
+              updateStreamingParts((prev) => {
+                const last = prev[prev.length - 1]
+                if (last?.type === 'text') {
+                  return [...prev.slice(0, -1), { ...last, content: last.content + deltaText }]
+                }
+                return [...prev, { type: 'text', content: deltaText }]
+              })
+              return
+            }
+            if (chunk.type === 'tool-call') {
+              const p = chunk.payload ?? chunk
+              updateStreamingParts((prev) => {
+                if (prev.some((part) => part.type === 'tool' && (part as ToolPart).toolCallId === p.toolCallId)) return prev
+                return [...prev, { type: 'tool', toolCallId: p.toolCallId, toolName: p.toolName, args: p.args ?? {}, status: 'running' } as ToolPart]
+              })
+              return
+            }
+            if (chunk.type === 'tool-result') {
+              const p = chunk.payload ?? chunk
+              updateStreamingParts((prev) =>
+                prev.map((part) =>
+                  part.type === 'tool' && (part as ToolPart).toolCallId === p.toolCallId
+                    ? { ...part, result: p.result, status: 'done' }
+                    : part
+                )
+              )
             }
           },
         })
 
         if (controller.signal.aborted) return
 
+        const parts = streamingPartsRef.current
+        const textContent = parts
+          .filter((p): p is TextPart => p.type === 'text')
+          .map((p) => p.content)
+          .join('')
+        const toolCalls = parts
+          .filter((p): p is ToolPart => p.type === 'tool')
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          .map(({ type: _type, ...tc }) => tc as ToolCall)
+
         const assistantMessage: ChatMessage = {
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: accumulated,
+          content: textContent,
+          toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+          parts: parts.length > 0 ? [...parts] : undefined,
         }
         setMessages((prev) => [...prev, assistantMessage])
-        setStreamingContent('')
         lastUserMessageIdRef.current = null
         queryClient.invalidateQueries({ queryKey: ['conversations'] })
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') return
         setError(err instanceof Error ? err : new Error(String(err)))
         setMessages((prev) => prev.filter((m) => m.id !== userMessage.id))
-        setStreamingContent('')
       } finally {
-        isStreamingRef.current = false
-        setIsStreaming(false)
+        clearStream()
       }
     },
-    [threadId, getToken, user, onThreadCreated, queryClient, clearStream],
+    [threadId, getToken, user, onThreadCreated, queryClient, clearStream, updateStreamingParts],
   )
 
   const abortMessage = useCallback(() => clearStream(true), [clearStream])
 
-  return { messages, isLoading, isStreaming, streamingContent, error, sendMessage, abortMessage }
+  return { messages, isLoading, isStreaming, streamingParts, error, sendMessage, abortMessage }
 }

@@ -27,6 +27,11 @@ export class DatasetsController {
     return this.datasetsService.listDatasets(user.orgId!);
   }
 
+  @Get('ids')
+  async listDatasetIds(@CurrentUser() user: ClerkUser) {
+    return this.datasetsService.listDatasetIds(user.orgId!);
+  }
+
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async createDataset(
@@ -77,6 +82,14 @@ export class DatasetsController {
       { ...body, startRow: body.startRow ? parseInt(body.startRow, 10) : undefined },
       file.buffer,
     );
+  }
+
+  @Get(':datasetId/tables')
+  async listTables(
+    @CurrentUser() user: ClerkUser,
+    @Param('datasetId') datasetId: string,
+  ) {
+    return this.datasetsService.listTables(user.orgId!, datasetId);
   }
 
   @Get(':datasetId/tables/:tableId')

@@ -1,12 +1,13 @@
 import { Agent } from '@mastra/core/agent';
 import { Memory } from '@mastra/memory';
+import { listDatasetsTool, listTablesTool, getTableDetailsTool } from '../tools/datasets';
 
 export const analyticsAgent = new Agent({
   id: 'analytics-agent',
   name: 'Analytics Agent',
-  instructions: ``,
+  instructions: `Your goal is to provide highly precise answers to user queries by leveraging your available tools. Your primary technology stack is BigQuery. Explain everything you do.`,
   model: 'google/gemini-3.1-pro-preview',
-  tools: { },
+  tools: { listDatasetsTool, listTablesTool, getTableDetailsTool },
   scorers: { },
   memory: new Memory({
     options: {
