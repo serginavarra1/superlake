@@ -32,6 +32,15 @@ export class DatasetsController {
     return this.datasetsService.listDatasetIds(user.orgId!);
   }
 
+  @Post('read-only-query')
+  @HttpCode(HttpStatus.OK)
+  async runReadOnlyQuery(
+    @CurrentUser() user: ClerkUser,
+    @Body() body: { query: string; startIndex: number; maxResults: 20 | 50 | 100 },
+  ) {
+    return this.datasetsService.runReadOnlyQuery(user.orgId!, body.query, body.startIndex, body.maxResults);
+  }
+
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async createDataset(

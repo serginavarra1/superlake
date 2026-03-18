@@ -188,9 +188,198 @@ function ToolCallDisplay({ toolCalls }: { toolCalls: ToolCall[] }) {
   )
 }
 
+type SchemaField = {
+  name: string
+  type: string
+  mode: string
+  description?: string
+  fields?: SchemaField[]
+}
+
+function renderToolInput(toolName: string, args: Record<string, unknown>): React.ReactNode {
+  switch (toolName) {
+    case 'listDatasetsTool':
+      return null
+    case 'listTablesTool':
+      return (
+        <span>
+          Dataset: <code className="bg-muted px-1 rounded">{String(args.datasetId ?? '')}</code>
+        </span>
+      )
+    case 'getTableDetailsTool':
+      return (
+        <span>
+          Table:{' '}
+          <code className="bg-muted px-1 rounded">
+            {String(args.datasetId ?? '')}.{String(args.tableId ?? '')}
+          </code>
+        </span>
+      )
+    case 'runReadOnlyQueryTool':
+      return (
+        <div className="space-y-1">
+          <pre className="overflow-x-auto whitespace-pre-wrap break-all rounded bg-muted px-2 py-1.5 text-xs">
+            {String(args.query ?? '')}
+          </pre>
+          <span className="text-muted-foreground text-xs">
+            offset {String(args.startIndex ?? 0)}, max {String(args.maxResults ?? '')} rows
+          </span>
+        </div>
+      )
+    default:
+      return (
+        <pre className="overflow-x-auto whitespace-pre-wrap break-all">
+          {JSON.stringify(args, null, 2)}
+        </pre>
+      )
+  }
+}
+
+function renderToolResult(toolName: string, result: unknown): React.ReactNode {
+  switch (toolName) {
+    case 'listDatasetsTool': {
+      const datasets = result as Array<{ datasetId: string }>
+      if (!Array.isArray(datasets) || datasets.length === 0)
+        return <span className="text-muted-foreground">No datasets found</span>
+      return (
+        <div className="flex flex-wrap gap-1">
+          {datasets.map((d) => (
+            <span key={d.datasetId} className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]">
+              {d.datasetId}
+            </span>
+          ))}
+        </div>
+      )
+    }
+    case 'listTablesTool': {
+      const tables = result as Array<{ tableId: string; type: string }>
+      if (!Array.isArray(tables) || tables.length === 0)
+        return <span className="text-muted-foreground">No tables found</span>
+      return (
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-border">
+              <th className="pb-1 pr-3 text-left font-medium text-muted-foreground">Table</th>
+              <th className="pb-1 text-left font-medium text-muted-foreground">Type</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tables.map((t) => (
+              <tr key={t.tableId} className="border-b border-border/50 last:border-0">
+                <td className="py-0.5 pr-3 font-mono">{t.tableId}</td>
+                <td className="py-0.5 text-muted-foreground">{t.type}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )
+    }
+    case 'getTableDetailsTool': {
+      const details = result as {
+        tableId: string
+        datasetId: string
+        description?: string
+        schema: SchemaField[]
+        rowCount: number | null
+        partitioning?: { type: string; field?: string; requireFilter: boolean }
+      }
+      return (
+        <div className="space-y-2">
+          {details.description && (
+            <p className="text-muted-foreground">{details.description}</p>
+          )}
+          <div className="flex flex-wrap gap-3 text-xs">
+            {details.rowCount !== null && (
+              <span>
+                <span className="text-muted-foreground">Rows: </span>
+                <span className="font-mono">{details.rowCount.toLocaleString()}</span>
+              </span>
+            )}
+            {details.partitioning && (
+              <span>
+                <span className="text-muted-foreground">Partition: </span>
+                <span className="font-mono">
+                  {details.partitioning.type}
+                  {details.partitioning.field ? ` (${details.partitioning.field})` : ''}
+                </span>
+              </span>
+            )}
+          </div>
+          {Array.isArray(details.schema) && details.schema.length > 0 && (
+            <table className="w-full text-[11px]">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="pb-1 pr-3 text-left font-medium text-muted-foreground">Field</th>
+                  <th className="pb-1 pr-3 text-left font-medium text-muted-foreground">Type</th>
+                  <th className="pb-1 pr-3 text-left font-medium text-muted-foreground">Mode</th>
+                  <th className="pb-1 text-left font-medium text-muted-foreground">Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                {details.schema.map((f) => (
+                  <tr key={f.name} className="border-b border-border/50 last:border-0">
+                    <td className="py-0.5 pr-3 font-mono">{f.name}</td>
+                    <td className="py-0.5 pr-3 text-muted-foreground">{f.type}</td>
+                    <td className="py-0.5 pr-3 text-muted-foreground">{f.mode}</td>
+                    <td className="py-0.5 text-muted-foreground">{f.description ?? ''}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )
+    }
+    case 'runReadOnlyQueryTool': {
+      const { rows, totalRows } = result as { rows: Array<Record<string, unknown>>; totalRows: number }
+      if (!Array.isArray(rows) || rows.length === 0)
+        return <span className="text-muted-foreground">No rows returned</span>
+      const columns = Object.keys(rows[0])
+      return (
+        <div className="space-y-1.5">
+          <p className="text-muted-foreground text-xs">{totalRows} row{totalRows !== 1 ? 's' : ''}</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-[11px]">
+              <thead>
+                <tr className="border-b border-border">
+                  {columns.map((col) => (
+                    <th key={col} className="pb-1 pr-3 text-left font-medium text-muted-foreground whitespace-nowrap">
+                      {col}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row, i) => (
+                  <tr key={i} className="border-b border-border/50 last:border-0">
+                    {columns.map((col) => (
+                      <td key={col} className="py-0.5 pr-3 font-mono whitespace-nowrap">
+                        {row[col] === null || row[col] === undefined
+                          ? <span className="text-muted-foreground italic">null</span>
+                          : String(row[col])}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )
+    }
+    default:
+      return (
+        <pre className="overflow-x-auto whitespace-pre-wrap break-all">
+          {typeof result === 'string' ? result : JSON.stringify(result, null, 2)}
+        </pre>
+      )
+  }
+}
+
 function ToolCallItem({ toolCall }: { toolCall: ToolCall }) {
-  const [open, setOpen] = useState(false)
-  const hasDetails = Object.keys(toolCall.args ?? {}).length > 0 || toolCall.result !== undefined
+  const [open, setOpen] = useState(true)
+  const inputNode = renderToolInput(toolCall.toolName, toolCall.args ?? {})
+  const hasDetails = inputNode !== null || toolCall.result !== undefined
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
@@ -221,22 +410,22 @@ function ToolCallItem({ toolCall }: { toolCall: ToolCall }) {
       {hasDetails && (
         <CollapsibleContent>
           <div className="mt-0.5 rounded-md bg-muted/40 px-2.5 py-2 text-xs font-mono">
-            <p className="mb-1 text-muted-foreground font-sans font-medium text-[10px] uppercase tracking-wide">
-              Input
-            </p>
-            <pre className="overflow-x-auto whitespace-pre-wrap break-all">
-              {JSON.stringify(toolCall.args, null, 2)}
-            </pre>
+            {inputNode !== null && (
+              <>
+                <p className="mb-1 text-muted-foreground font-sans font-medium text-xs uppercase tracking-wide">
+                  Input
+                </p>
+                <div className="font-sans py-2">{inputNode}</div>
+              </>
+            )}
             {toolCall.result !== undefined && (
               <>
-                <p className="mt-2 mb-1 text-muted-foreground font-sans font-medium text-[10px] uppercase tracking-wide">
+                <p className={cn('mb-1 mt-2 text-muted-foreground font-sans font-medium text-xs uppercase tracking-wide', inputNode !== null && 'mt-2')}>
                   Result
                 </p>
-                <pre className="overflow-x-auto whitespace-pre-wrap break-all">
-                  {typeof toolCall.result === 'string'
-                    ? toolCall.result
-                    : JSON.stringify(toolCall.result, null, 2)}
-                </pre>
+                <div className="font-sans py-2">
+                  {renderToolResult(toolCall.toolName, toolCall.result)}
+                </div>
               </>
             )}
           </div>

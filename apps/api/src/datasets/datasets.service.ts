@@ -438,6 +438,35 @@ export class DatasetsService {
     }
   }
 
+  async runReadOnlyQuery(
+    clerkOrgId: string,
+    query: string,
+    startIndex: number,
+    maxResults: number,
+  ): Promise<{ rows: Record<string, unknown>[]; totalRows: number }> {
+    const org = await this.getActiveOrg(clerkOrgId);
+    const bigquery = new BigQuery({ projectId: org.gcpProjectId! });
+
+    let rows: any[];
+    try {
+      const [job] = await bigquery.createQueryJob({ query });
+      [rows] = await job.getQueryResults({ startIndex: startIndex.toString(), maxResults });
+    } catch (error) {
+      handleGcpError(error);
+    }
+
+    const serialized = rows!.map((row) => {
+      const out: Record<string, unknown> = {};
+      for (const [key, val] of Object.entries(row)) {
+        if (val === null || val === undefined) out[key] = null;
+        else if (typeof val === 'object' && 'value' in (val as any)) out[key] = (val as any).value;
+        else out[key] = val;
+      }
+      return out;
+    });
+    return { rows: serialized, totalRows: serialized.length };
+  }
+
   async getDistinctValues(
     clerkOrgId: string,
     datasetId: string,

@@ -52,6 +52,31 @@ export const listTablesTool = createTool({
   },
 });
 
+export const runReadOnlyQueryTool = createTool({
+  id: 'run-read-only-query',
+  description: 'Executes a read-only BigQuery SQL SELECT query and returns paginated results',
+  inputSchema: z.object({
+    query: z.string(),
+    startIndex: z.number().int().min(0),
+    maxResults: z.number().int().describe('must be 20, 50, or 100').refine((v) => [20, 50, 100].includes(v)),
+  }),
+  outputSchema: z.object({
+    rows: z.array(z.record(z.string(), z.unknown())),
+    totalRows: z.number(),
+  }),
+  execute: async ({ query, startIndex, maxResults }, context) => {
+    const authToken = context?.requestContext?.get('auth-token') as string;
+    const res = await fetch(`${getApiBase()}/api/datasets/read-only-query`, {
+      method: 'POST',
+      headers: { Authorization: authToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, startIndex, maxResults }),
+    });
+    if (!res.ok) throw new Error(`run-query failed: ${res.status} ${res.statusText}`);
+    const json = await res.json();
+    return Array.isArray(json) ? json : json.data;
+  },
+});
+
 export const getTableDetailsTool = createTool({
   id: 'get-table-details',
   description:
