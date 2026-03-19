@@ -10,7 +10,10 @@
       "Bash(/bin/sh -c 'echo $PATH')",
       "Bash(npx shadcn@latest add calendar:*)",
       "WebFetch(domain:mastra.ai)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(xargs cat:*)",
+      "Bash(find 'c:/Users/sergi/Desktop/Unnamed Project' -path */node_modules/@mastra/observability/dist/index.d.ts)",
+      "Bash(find c:/Users/sergi/Desktop/Unnamed Project/node_modules/.pnpm/@mastra+core@1.10.0* -path */observability* -name *.d.ts)"
     ]
   }
 }

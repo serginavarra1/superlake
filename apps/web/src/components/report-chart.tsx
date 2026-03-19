@@ -27,6 +27,7 @@ interface ReportChartProps {
   data: Record<string, unknown>[] | undefined
   isFetching: boolean
   isError: boolean
+  bgColor?: string
 }
 
 const locale = typeof navigator !== "undefined" ? navigator.language : undefined
@@ -171,7 +172,7 @@ function buildChartOptions(
   return { data, series, ...commonCartesianProps } as unknown as AgChartOptions
 }
 
-export function ReportChart({ config, data, isFetching, isError }: ReportChartProps) {
+export function ReportChart({ config, data, isFetching, isError, bgColor }: ReportChartProps) {
   const queryable = isQueryable(config)
   const vizType = config.visualization?.type
 
@@ -235,6 +236,10 @@ export function ReportChart({ config, data, isFetching, isError }: ReportChartPr
   const options = buildChartOptions(config, data)
   if (!options) return null
 
+  const chartOptions: AgChartOptions = bgColor
+    ? { ...options, background: { fill: bgColor } }
+    : options
+
   return (
     <div className="relative flex-1 min-h-0 p-4">
       {isFetching && (
@@ -242,7 +247,7 @@ export function ReportChart({ config, data, isFetching, isError }: ReportChartPr
           <Loader2 className="size-4 animate-spin text-muted-foreground" />
         </div>
       )}
-      <AgCharts options={options} style={{ height: "100%", width: "100%" }} />
+      <AgCharts options={chartOptions} style={{ height: "100%", width: "100%" }} />
     </div>
   )
 }

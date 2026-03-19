@@ -3,9 +3,27 @@ import { PinoLogger } from '@mastra/loggers';
 import { PostgresStore } from '@mastra/pg';
 import { MastraAuthClerk } from '@mastra/auth-clerk';
 import { Observability, DefaultExporter, CloudExporter, SensitiveDataFilter } from '@mastra/observability';
+import type { SpanOutputProcessor, AnySpan } from '@mastra/core/observability';
 import { MASTRA_RESOURCE_ID_KEY } from '@mastra/core/request-context';
 import { analyticsAgent } from './agents/analytics-agent';
 import { extractUserIdFromToken } from '../lib/jwt';
+
+class TokenLogger implements SpanOutputProcessor {
+  name = 'token-logger';
+
+  process(span?: AnySpan): AnySpan | undefined {
+    if (!span) return span;
+    if (span.type === 'model_step') {
+      const usage = (span.attributes as any)?.usage;
+      if (usage?.inputTokens !== undefined) {
+        console.log(`[TokenLogger] input=${usage.inputTokens} output=${usage.outputTokens} total=${(usage.inputTokens ?? 0) + (usage.outputTokens ?? 0)}`);
+      }
+    }
+    return span;
+  }
+
+  async shutdown(): Promise<void> {}
+}
 
 export const mastra = new Mastra({
   workflows: { },
@@ -55,6 +73,7 @@ export const mastra = new Mastra({
         ],
         spanOutputProcessors: [
           new SensitiveDataFilter(), // Redacts sensitive data like passwords, tokens, keys
+          new TokenLogger(),
         ],
       },
     },

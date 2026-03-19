@@ -438,6 +438,26 @@ export class DatasetsService {
     }
   }
 
+  async runWriteQuery(
+    clerkOrgId: string,
+    query: string,
+  ): Promise<{ affectedRows?: number; message: string }> {
+    const org = await this.getActiveOrg(clerkOrgId);
+    const bigquery = new BigQuery({ projectId: org.gcpProjectId! });
+    try {
+      const [job] = await bigquery.createQueryJob({ query });
+      await job.getQueryResults();
+      await job.getMetadata();
+      const stats = (job.metadata as any)?.statistics?.query;
+      return {
+        affectedRows: stats?.numDmlAffectedRows != null ? Number(stats.numDmlAffectedRows) : undefined,
+        message: 'Query executed successfully',
+      };
+    } catch (error) {
+      handleGcpError(error);
+    }
+  }
+
   async runReadOnlyQuery(
     clerkOrgId: string,
     query: string,

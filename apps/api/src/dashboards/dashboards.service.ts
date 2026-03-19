@@ -1,11 +1,13 @@
 import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { BigQuery } from '@google-cloud/bigquery';
 import { GcpStatus, Prisma } from '@prisma/client';
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import { OrganizationsService } from '../organizations/organizations.service';
 import { handleGcpError } from '../common/gcp-error';
 import { buildQuery, serialise } from './dashboard.utils'
-import { BatchUpdateWidgetsDto, CreateDashboardDto, CreateWidgetDto, ReportConfigDto, UpdateDashboardDto, UpdateWidgetDto } from './dashboards.types';
+import { BatchUpdateWidgetsDto, CreateDashboardDto, CreateWidgetDto, ReportConfigDto, WidgetReportConfigDto, UpdateDashboardDto, UpdateWidgetDto } from './dashboards.types';
 
 @Injectable()
 export class DashboardsService {
@@ -278,5 +280,17 @@ export class DashboardsService {
     } catch (error) {
       handleGcpError(error);
     }
+  }
+
+  async validateWidgetConfig(body: unknown): Promise<{ valid: boolean; errors?: string[] }> {
+    const instance = plainToInstance(WidgetReportConfigDto, body);
+    const errors = await validate(instance);
+    if (errors.length > 0) {
+      return {
+        valid: false,
+        errors: errors.flatMap((e) => Object.values(e.constraints ?? {})),
+      };
+    }
+    return { valid: true };
   }
 }

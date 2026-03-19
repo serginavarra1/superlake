@@ -183,7 +183,7 @@ function IsVisualizationCompatible(options?: ValidationOptions) {
   };
 }
 
-class WidgetReportConfigDto {
+export class WidgetReportConfigDto {
   @IsString()
   title!: string;
 

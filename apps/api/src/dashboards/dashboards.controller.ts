@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, UsePipes } from '@nestjs/common';
 import { DashboardsService } from './dashboards.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ClerkUser } from '../auth/interfaces/clerk-user.interface';
@@ -85,6 +85,13 @@ export class DashboardsController {
     @Param('widgetId') widgetId: string,
   ) {
     return this.dashboardsService.deleteWidget(user.orgId!, id, widgetId);
+  }
+
+  @Post('widget-data/validate')
+  @HttpCode(HttpStatus.OK)
+  @UsePipes()
+  async validateWidgetConfig(@Body() body: unknown) {
+    return this.dashboardsService.validateWidgetConfig(body);
   }
 
   @Post('widget-data')

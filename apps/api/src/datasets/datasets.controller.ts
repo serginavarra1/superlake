@@ -32,6 +32,15 @@ export class DatasetsController {
     return this.datasetsService.listDatasetIds(user.orgId!);
   }
 
+  @Post('write-query')
+  @HttpCode(HttpStatus.OK)
+  async runWriteQuery(
+    @CurrentUser() user: ClerkUser,
+    @Body() body: { query: string },
+  ) {
+    return this.datasetsService.runWriteQuery(user.orgId!, body.query);
+  }
+
   @Post('read-only-query')
   @HttpCode(HttpStatus.OK)
   async runReadOnlyQuery(
