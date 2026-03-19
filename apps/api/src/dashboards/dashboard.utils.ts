@@ -1,28 +1,26 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
-import { BigQuery } from '@google-cloud/bigquery';
-import { GcpStatus } from '@prisma/client';
-import { OrganizationsService } from '../organizations/organizations.service';
-import { MetricDto, ReportConfigDto } from './reports.types';
-import { handleGcpError } from '../common/gcp-error';
+import { BadRequestException } from '@nestjs/common';
+import { MetricDto, ReportConfigDto } from './dashboards.types';
 
 // Unicode letters, digits, underscore — safe for backtick-quoted column names; dots allowed for nested field paths
 const SAFE_COLUMN_RE = /^[\p{L}\p{N}_ ]+(?:\.[\p{L}\p{N}_ ]+)*$/u;
 // Unicode letters, digits, underscore, hyphens, spaces — safe for backtick-quoted dataset/table identifiers
 const SAFE_IDENTIFIER_RE = /^[\p{L}\p{N}_ -]+$/u;
 
-function assertIdentifier(value: string, label: string): void {
+// BigQuery date/time types that carry their value in a `.value` string property
+export const BQ_TEMPORAL_TYPES = new Set([
+  'BigQueryDate',
+  'BigQueryTime',
+  'BigQueryTimestamp',
+  'BigQueryDatetime',
+]);
+
+export function assertIdentifier(value: string, label: string): void {
   if (!SAFE_IDENTIFIER_RE.test(value)) {
     throw new BadRequestException(`Invalid ${label}: "${value}"`);
   }
 }
 
-function assertColumn(value: string): void {
+export function assertColumn(value: string): void {
   if (!SAFE_COLUMN_RE.test(value)) {
     throw new BadRequestException(`Invalid column name: "${value}"`);
   }
@@ -30,18 +28,18 @@ function assertColumn(value: string): void {
 
 // Backtick-quote each path segment individually so nested fields like
 // `parent`.`child` are valid BigQuery syntax (not `parent.child`).
-function quoteColumn(column: string): string {
+export function quoteColumn(column: string): string {
   return column.split('.').map((seg) => `\`${seg}\``).join('.');
 }
 
 // Try to parse a string value as a number so BigQuery receives the correct type
 // when comparing against numeric columns. Falls back to the original string.
-function coerceScalar(v: string): string | number {
+export function coerceScalar(v: string): string | number {
   const n = Number(v);
   return Number.isFinite(n) ? n : v;
 }
 
-function granularityExpr(column: string, granularity: string[] | null): string {
+export function granularityExpr(column: string, granularity: string[] | null): string {
   const col = quoteColumn(column);
   if (!granularity || granularity.length === 0) return col;
 
@@ -60,13 +58,29 @@ function granularityExpr(column: string, granularity: string[] | null): string {
   return `DATE(${col})`;
 }
 
-interface QueryPlan {
+// Recursively convert BigInt and BigQuery temporal values for JSON serialisation
+export function serialise(value: unknown): unknown {
+  if (typeof value === 'bigint') return Number(value);
+  if (Array.isArray(value)) return value.map(serialise);
+  if (value !== null && typeof value === 'object') {
+    const ctorName = (value as object).constructor?.name;
+    if (BQ_TEMPORAL_TYPES.has(ctorName)) {
+      return (value as { value: string }).value;
+    }
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, serialise(v)]),
+    );
+  }
+  return value;
+}
+
+export interface QueryPlan {
   sql: string;
   params: Record<string, unknown>;
   types: Record<string, string | string[]>;
 }
 
-function buildQuery(config: ReportConfigDto): QueryPlan {
+export function buildQuery(config: ReportConfigDto): QueryPlan {
   const {
     dataSource,
     dimension,
@@ -240,98 +254,4 @@ function buildQuery(config: ReportConfigDto): QueryPlan {
   }
 
   return { sql, params, types };
-}
-
-// BigQuery date/time types that carry their value in a `.value` string property
-const BQ_TEMPORAL_TYPES = new Set([
-  'BigQueryDate',
-  'BigQueryTime',
-  'BigQueryTimestamp',
-  'BigQueryDatetime',
-]);
-
-// Recursively convert BigInt and BigQuery temporal values for JSON serialisation
-function serialise(value: unknown): unknown {
-  if (typeof value === 'bigint') return Number(value);
-  if (Array.isArray(value)) return value.map(serialise);
-  if (value !== null && typeof value === 'object') {
-    const ctorName = (value as object).constructor?.name;
-    if (BQ_TEMPORAL_TYPES.has(ctorName)) {
-      return (value as { value: string }).value;
-    }
-    return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, serialise(v)]),
-    );
-  }
-  return value;
-}
-
-@Injectable()
-export class ReportsService {
-  private readonly logger = new Logger(ReportsService.name);
-
-  constructor(private readonly organizationsService: OrganizationsService) {}
-
-  async batchRunQuery(clerkOrgId: string, queries: ReportConfigDto[]): Promise<(unknown[] | null)[]> {
-    const organization = await this.organizationsService.getByClerkOrgId(clerkOrgId);
-
-    if (!organization) {
-      throw new NotFoundException('Organization not found');
-    }
-
-    if (organization.gcpStatus !== GcpStatus.active) {
-      throw new ForbiddenException(
-        `Organization GCP project is not active (status: ${organization.gcpStatus})`,
-      );
-    }
-
-    const bigquery = new BigQuery({ projectId: organization.gcpProjectId! });
-
-    const settled = await Promise.allSettled(
-      queries.map(async (config) => {
-        const { sql, params, types } = buildQuery(config);
-        const [rows] = await bigquery.query({
-          query: sql,
-          params: Object.keys(params).length > 0 ? params : undefined,
-          types: Object.keys(types).length > 0 ? types : undefined,
-        });
-        return serialise(rows) as unknown[];
-      }),
-    );
-
-    return settled.map((r) => {
-      if (r.status === 'fulfilled') return r.value;
-      this.logger.error('Batch query failed', r.reason instanceof Error ? r.reason.stack : String(r.reason));
-      return null;
-    });
-  }
-
-  async runQuery(clerkOrgId: string, config: ReportConfigDto): Promise<unknown[]> {
-    const organization = await this.organizationsService.getByClerkOrgId(clerkOrgId);
-
-    if (!organization) {
-      throw new NotFoundException('Organization not found');
-    }
-
-    if (organization.gcpStatus !== GcpStatus.active) {
-      throw new ForbiddenException(
-        `Organization GCP project is not active (status: ${organization.gcpStatus})`,
-      );
-    }
-
-    const { sql, params, types } = buildQuery(config);
-    this.logger.debug(`Running report query:\n${sql}`);
-
-    const bigquery = new BigQuery({ projectId: organization.gcpProjectId! });
-    try {
-      const [rows] = await bigquery.query({
-        query: sql,
-        params: Object.keys(params).length > 0 ? params : undefined,
-        types: Object.keys(types).length > 0 ? types : undefined,
-      });
-      return serialise(rows) as unknown[];
-    } catch (error) {
-      handleGcpError(error);
-    }
-  }
 }

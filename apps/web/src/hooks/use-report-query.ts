@@ -35,7 +35,7 @@ export function useBatchReportQuery(widgets: Array<{ id: string; config: ReportC
   return useQuery({
     queryKey: ['batch-report-query', queryable.map((w) => w.payload)],
     queryFn: () =>
-      apiFetch<{ data: (unknown[] | null)[] }>('/reports/batch-query', {
+      apiFetch<{ data: (unknown[] | null)[] }>('/dashboards/widget-data/batch', {
         method: 'POST',
         body: JSON.stringify({ queries }),
       }).then((res) => {
@@ -57,7 +57,7 @@ export function useReportQuery(config: ReportConfig) {
   return useQuery({
     queryKey: ['report-query', debouncedPayload],
     queryFn: () =>
-      apiFetch<{ data: Record<string, unknown>[] }>('/reports/query', {
+      apiFetch<{ data: Record<string, unknown>[] }>('/dashboards/widget-data', {
         method: 'POST',
         body: JSON.stringify(debouncedPayload),
       }).then((res) => res.data),

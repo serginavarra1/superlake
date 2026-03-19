@@ -1,11 +1,20 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BigQuery } from '@google-cloud/bigquery';
+import { GcpStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { BatchUpdateWidgetsDto, CreateDashboardDto, CreateWidgetDto, UpdateDashboardDto, UpdateWidgetDto } from './dashboards.types';
+import { OrganizationsService } from '../organizations/organizations.service';
+import { handleGcpError } from '../common/gcp-error';
+import { buildQuery, serialise } from './dashboard.utils'
+import { BatchUpdateWidgetsDto, CreateDashboardDto, CreateWidgetDto, ReportConfigDto, UpdateDashboardDto, UpdateWidgetDto } from './dashboards.types';
 
 @Injectable()
 export class DashboardsService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(DashboardsService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private readonly organizationsService: OrganizationsService,
+  ) {}
 
   async list(clerkOrgId: string, clerkUserId: string) {
     const [dashboards, favs] = await Promise.all([
@@ -206,5 +215,68 @@ export class DashboardsService {
     }
 
     return this.prisma.dashboardWidget.delete({ where: { id: widgetId } });
+  }
+
+  async executeWidgetsBatchQuery(clerkOrgId: string, queries: ReportConfigDto[]): Promise<(unknown[] | null)[]> {
+    const organization = await this.organizationsService.getByClerkOrgId(clerkOrgId);
+
+    if (!organization) {
+      throw new NotFoundException('Organization not found');
+    }
+
+    if (organization.gcpStatus !== GcpStatus.active) {
+      throw new ForbiddenException(
+        `Organization GCP project is not active (status: ${organization.gcpStatus})`,
+      );
+    }
+
+    const bigquery = new BigQuery({ projectId: organization.gcpProjectId! });
+
+    const settled = await Promise.allSettled(
+      queries.map(async (config) => {
+        const { sql, params, types } = buildQuery(config);
+        const [rows] = await bigquery.query({
+          query: sql,
+          params: Object.keys(params).length > 0 ? params : undefined,
+          types: Object.keys(types).length > 0 ? types : undefined,
+        });
+        return serialise(rows) as unknown[];
+      }),
+    );
+
+    return settled.map((r) => {
+      if (r.status === 'fulfilled') return r.value;
+      this.logger.error('Batch query failed', r.reason instanceof Error ? r.reason.stack : String(r.reason));
+      return null;
+    });
+  }
+
+  async executeWidgetQuery(clerkOrgId: string, config: ReportConfigDto): Promise<unknown[]> {
+    const organization = await this.organizationsService.getByClerkOrgId(clerkOrgId);
+
+    if (!organization) {
+      throw new NotFoundException('Organization not found');
+    }
+
+    if (organization.gcpStatus !== GcpStatus.active) {
+      throw new ForbiddenException(
+        `Organization GCP project is not active (status: ${organization.gcpStatus})`,
+      );
+    }
+
+    const { sql, params, types } = buildQuery(config);
+    this.logger.debug(`Running widget data query:\n${sql}`);
+
+    const bigquery = new BigQuery({ projectId: organization.gcpProjectId! });
+    try {
+      const [rows] = await bigquery.query({
+        query: sql,
+        params: Object.keys(params).length > 0 ? params : undefined,
+        types: Object.keys(types).length > 0 ? types : undefined,
+      });
+      return serialise(rows) as unknown[];
+    } catch (error) {
+      handleGcpError(error);
+    }
   }
 }
