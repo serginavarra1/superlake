@@ -31,11 +31,11 @@ export const listDatasetsTool = createTool({
       headers: { Authorization: authToken },
     });
     if (!res.ok) {
-      const body = await res.json().catch(() => null);
+      const body = await res.json().catch(() => null) as any;
       const message = body?.message ?? body?.error ?? `${res.status} ${res.statusText}`;
       return { error: message };
     }
-    const json = await res.json();
+    const json = await res.json() as any;
     return Array.isArray(json) ? json : json.data;
   },
 });
@@ -57,11 +57,11 @@ export const listTablesTool = createTool({
       { headers: { Authorization: authToken } },
     );
     if (!res.ok) {
-      const body = await res.json().catch(() => null);
+      const body = await res.json().catch(() => null) as any;
       const message = body?.message ?? body?.error ?? `${res.status} ${res.statusText}`;
       return { error: message };
     }
-    const json = await res.json();
+    const json = await res.json() as any;
     return Array.isArray(json) ? json : json.data;
   },
 });
@@ -87,11 +87,11 @@ export const runReadOnlyQueryTool = createTool({
       body: JSON.stringify({ query, startIndex, maxResults }),
     });
     if (!res.ok) {
-      const body = await res.json().catch(() => null);
+      const body = await res.json().catch(() => null) as any;
       const message = body?.message ?? body?.error ?? `${res.status} ${res.statusText}`;
       return { error: message };
     }
-    const json = await res.json();
+    const json = await res.json() as any;
     const data = Array.isArray(json) ? json : json.data;
     return data;
   },
@@ -118,7 +118,7 @@ export const runWriteQueryTool = createTool({
       body: JSON.stringify({ query }),
     });
     if (!res.ok) {
-      const body = await res.json().catch(() => null);
+      const body = await res.json().catch(() => null) as any;
       const message = body?.message ?? body?.error ?? `${res.status} ${res.statusText}`;
       return { error: message };
     }
@@ -200,7 +200,7 @@ export const createVisualizationTool = createTool({
       const body = await validateRes.text().catch(() => '');
       return { valid: false, errors: [`Validation request failed (${validateRes.status}): ${body}`] };
     }
-    const validateJson = await validateRes.json();
+    const validateJson = await validateRes.json() as any;
     const validation = validateJson.data ?? validateJson;
 
     return { valid: validation.valid, errors: validation.errors ?? undefined };
@@ -235,11 +235,11 @@ export const getTableDetailsTool = createTool({
     const url = `${getApiBase()}/api/datasets/${encodeURIComponent(datasetId)}/tables/${encodeURIComponent(tableId)}`;
     const res = await fetch(url, { headers: { Authorization: authToken } });
     if (!res.ok) {
-      const body = await res.json().catch(() => null);
+      const body = await res.json().catch(() => null) as any;
       const message = body?.message ?? body?.error ?? `${res.status} ${res.statusText}`;
       return { error: message };
     }
-    const json = await res.json();
+    const json = await res.json() as any;
     const data = json.data ?? json;
     return {
       tableId: data.tableId,

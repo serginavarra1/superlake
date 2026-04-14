@@ -2,7 +2,7 @@ import { MessageSquare, AlertCircle, Plus, MoreHorizontal, Trash2 } from 'lucide
 import { useConversations, useDeleteConversation } from '@/hooks/use-conversations'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
-import { Button } from './ui/button'
+import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import {
   DropdownMenu,

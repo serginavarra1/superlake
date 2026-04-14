@@ -1,8 +1,8 @@
 import { useReportConfig, useReportActions } from "@/contexts/report-builder-context"
 import { useTableDetails } from "@/hooks/use-table"
 import { flattenSchema } from "@/lib/report-utils"
-import { ColumnPicker } from "@/components/column-picker"
-import { GranularityPicker } from "@/components/granularity-picker"
+import { ColumnPicker } from "@/components/report/column-picker"
+import { GranularityPicker } from "@/components/report/granularity-picker"
 import { Switch } from "@/components/ui/switch"
 
 const DATE_TYPES = new Set(["DATE", "DATETIME", "TIMESTAMP", "TIMESTAMP_NTZ"])

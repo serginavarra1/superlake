@@ -1,8 +1,8 @@
 import { ReportBuilderProvider, useReportConfig, useReportActions } from "@/contexts/report-builder-context"
 import type { ReportConfig } from "@/contexts/report-builder-context"
-import { ReportBuilderConfig } from "@/components/report-builder-config"
-import { ReportDataTable } from "@/components/report-data-table"
-import { ReportChart } from "@/components/report-chart"
+import { ReportBuilderConfig } from "@/components/report/report-builder-config"
+import { ReportDataTable } from "@/components/report/report-data-table"
+import { ReportChart } from "@/components/report/report-chart"
 import { useReportQuery } from "@/hooks/use-report-query"
 
 function ReportBuilderInner({ onSave }: { onSave?: (config: ReportConfig) => void }) {

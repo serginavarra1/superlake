@@ -1,7 +1,7 @@
 import { Table2 } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
-import { DatasetExplorer } from '@/components/dataset-explorer'
-import { TableDetailsPanel } from '@/components/table-details-panel'
+import { DatasetExplorer } from '@/components/dataset/dataset-explorer'
+import { TableDetailsPanel } from '@/components/dataset/table-details-panel'
 import {
   ResizablePanelGroup,
   ResizablePanel,

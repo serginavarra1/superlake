@@ -1,7 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { useOrganization } from '@clerk/clerk-react'
 
-import { AppSidebar } from '@/components/app-sidebar'
+import { AppSidebar } from '@/components/layout/app-sidebar'
 import {
   Breadcrumb,
   BreadcrumbItem,

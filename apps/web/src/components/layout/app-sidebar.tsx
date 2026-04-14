@@ -7,7 +7,7 @@ import {
   DatabaseSearch,
 } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
-import { NavUser } from "@/components/nav-user"
+import { NavUser } from "@/components/layout/nav-user"
 import {
   Sidebar,
   SidebarContent,

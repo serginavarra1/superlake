@@ -46,7 +46,7 @@ export const ChatInput = memo(function ChatInput({
         onKeyDown={onKeyDown}
         placeholder="Message..."
         disabled={isStreaming}
-        className="flex-1 resize-none bg-transparent text-base outline-none placeholder:text-muted-foreground disabled:opacity-50"
+        className="flex-1 resize-none bg-transparent text-md outline-none placeholder:text-muted-foreground disabled:opacity-50"
         style={{ maxHeight: 200, overflowY: 'auto' }}
       />
       {isStreaming ? (

@@ -12,8 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { TableEditSheet } from '@/components/table-edit-sheet'
-import { TablePreviewDialog } from '@/components/table-preview-dialog'
+import { TableEditSheet } from '@/components/dataset/table-edit-sheet'
+import { TablePreviewDialog } from '@/components/dataset/table-preview-dialog'
 import type { SchemaField, TableDetails } from '@/types/api'
 
 interface TableDetailsPanelProps {

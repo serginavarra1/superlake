@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { BotMessageSquare } from 'lucide-react'
 import { useChatMessages } from '@/hooks/use-chat-messages'
-import { ChatInput } from '@/components/chat-input'
-import { UserMessage, AssistantMessage, ErrorMessage } from '@/components/message-parts'
-import { ToolCallDisplay } from '@/components/tool-call-display'
+import { ChatInput } from '@/components/chat/chat-input'
+import { UserMessage, AssistantMessage, ErrorMessage } from '@/components/chat/message-parts'
+import { ToolCallDisplay } from '@/components/chat/tool-call-display'
 
 interface ChatInterfaceProps {
   threadId: string | null
@@ -36,6 +36,11 @@ export function ChatInterface({ threadId, onThreadCreated }: ChatInterfaceProps)
     setInput('')
     sendMessage(text)
   }, [input, isStreaming, isLoading, sendMessage])
+
+  const handleSuggestion = useCallback((text: string) => {
+    if (isStreaming || isLoading) return
+    sendMessage(text)
+  }, [isStreaming, isLoading, sendMessage])
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -136,6 +141,21 @@ export function ChatInterface({ threadId, onThreadCreated }: ChatInterfaceProps)
           </div>
           <p className="text-base font-semibold">What can I help you with?</p>
           <ChatInput {...chatInputProps} className="w-full max-w-2xl" />
+          <div className="flex flex-wrap justify-center gap-2 max-w-2xl">
+            {[
+              'What datasets do I have?',
+              'Show me a summary of my data',
+              'Create a new dashboard',
+            ].map((suggestion) => (
+              <button
+                key={suggestion}
+                onClick={() => handleSuggestion(suggestion)}
+                className="rounded-full border border-border bg-background px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
           {error && <ErrorMessage message={error.message} />}
         </div>
       )}

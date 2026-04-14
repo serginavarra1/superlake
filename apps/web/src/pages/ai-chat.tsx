@@ -1,6 +1,6 @@
 import { useSearchParams } from 'react-router-dom'
-import { ConversationsSidebar } from '@/components/conversations-sidebar'
-import { ChatInterface } from '@/components/chat-interface'
+import { ConversationsSidebar } from '@/components/layout/conversations-sidebar'
+import { ChatInterface } from '@/components/chat/chat-interface'
 import {
   ResizablePanelGroup,
   ResizablePanel,

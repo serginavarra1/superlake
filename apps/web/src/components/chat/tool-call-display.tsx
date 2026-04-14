@@ -1,9 +1,7 @@
-import { useState } from 'react'
-import { Check, ChevronDown, OctagonPause, Pause, X } from 'lucide-react'
+import { Check, OctagonPause, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { type ToolCall } from '@/hooks/use-chat-messages'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { ReportChart } from '@/components/report-chart'
+import { ReportChart } from '@/components/report/report-chart'
 import { useReportQuery } from '@/hooks/use-report-query'
 import type {
   ReportConfig,
@@ -320,7 +318,6 @@ interface ToolCallItemProps {
 }
 
 function ToolCallItem({ toolCall, onApprove, onDecline }: ToolCallItemProps) {
-  const [open, setOpen] = useState(true)
   const isVisualization = toolCall.toolName === 'createVisualizationTool'
   const isPendingApproval = toolCall.status === 'pending-approval'
   const inputNode = getToolInput(toolCall.toolName, toolCall.args ?? {})
@@ -328,48 +325,38 @@ function ToolCallItem({ toolCall, onApprove, onDecline }: ToolCallItemProps) {
   const hasError = toolCall.status === 'error'
 
   return (
-    <Collapsible open={open} onOpenChange={setOpen}>
-      <CollapsibleTrigger asChild>
-        <button
-          className={cn(
-            'flex w-full items-center gap-2 rounded-md px-2.5 py-2.5 text-xs',
-            'bg-muted/60 hover:bg-muted text-muted-foreground transition-colors',
-            !hasDetails && 'cursor-default pointer-events-none',
-          )}
-        >
-          {toolCall.status === 'running' ? (
-            <span className="h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin shrink-0" />
-          ) : isPendingApproval ? (
-            <OctagonPause className="h-3 w-3 shrink-0" aria-hidden />
-          ) : hasError ? (
-            <X className="h-3 w-3 shrink-0 text-destructive" aria-hidden />
-          ) : (
-            <Check className="h-3 w-3 shrink-0 text-green-600" aria-hidden />
-          )}
-          <span className="font-mono font-medium">{toolCall.toolName}</span>
-          {isPendingApproval && (
-            <span className="ml-1 text-[10px] font-sans font-medium uppercase tracking-wide opacity-70">
-              awaiting approval
-            </span>
-          )}
-          {hasDetails && (
-            <ChevronDown
-              className={cn(
-                'ml-auto h-3 w-3 shrink-0 transition-transform duration-150',
-                open && 'rotate-180',
-              )}
-            />
-          )}
-        </button>
-      </CollapsibleTrigger>
+    <div>
+      <div
+        className={cn(
+          'flex w-full items-center gap-2 rounded-md px-2.5 py-2.5 text-xs',
+          'bg-muted/40 text-muted-foreground border-x border-t',
+          hasDetails ? 'rounded-b-none' : '',
+        )}
+      >
+        {toolCall.status === 'running' ? (
+          <span className="h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin shrink-0" />
+        ) : isPendingApproval ? (
+          <OctagonPause className="h-3 w-3 shrink-0" aria-hidden />
+        ) : hasError ? (
+          <X className="h-3 w-3 shrink-0 text-destructive" aria-hidden />
+        ) : (
+          <Check className="h-3 w-3 shrink-0 text-green-600" aria-hidden />
+        )}
+        <span className="font-mono font-medium">{toolCall.toolName}</span>
+        {isPendingApproval && (
+          <span className="ml-1 text-[10px] font-sans font-medium uppercase tracking-wide opacity-70">
+            awaiting approval
+          </span>
+        )}
+      </div>
       {hasDetails && (
-        <CollapsibleContent>
+        <>
           {isVisualization ? (
-            <div className="mt-0.5 rounded-md bg-muted/40 text-xs font-mono">
+            <div className="rounded-b-md bg-muted/40 text-xs font-mono border">
               <VisualizationToolResult args={toolCall.args ?? {}} result={toolCall.result} />
             </div>
           ) : (
-            <div className="mt-0.5 rounded-md bg-muted/40 px-2.5 py-2 text-xs font-mono">
+            <div className="rounded-b-md bg-muted/40 px-2.5 py-2 text-xs font-mono border">
               {inputNode !== null && (
                 <>
                   <p className="mb-1 text-muted-foreground font-sans font-medium text-xs uppercase tracking-wide">
@@ -409,9 +396,9 @@ function ToolCallItem({ toolCall, onApprove, onDecline }: ToolCallItemProps) {
               )}
             </div>
           )}
-        </CollapsibleContent>
+        </>
       )}
-    </Collapsible>
+    </div>
   )
 }
 

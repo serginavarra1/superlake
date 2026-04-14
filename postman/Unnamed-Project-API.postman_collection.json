@@ -99,8 +99,314 @@
       ]
     },
     {
+      "name": "Home",
+      "item": [
+        {
+          "name": "Get Home Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/home",
+              "host": ["{{base_url}}"],
+              "path": ["home"]
+            },
+            "description": "Protected endpoint - Returns home page stats for the authenticated user's organization.\n\nRequires a valid Clerk Bearer token with an active organization."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Datasets",
       "item": [
+        {
+          "name": "List Datasets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/datasets",
+              "host": ["{{base_url}}"],
+              "path": ["datasets"]
+            },
+            "description": "Protected endpoint - Returns all BigQuery datasets and their tables for the authenticated user's organization.\n\nRequires a valid Clerk Bearer token with an active organization.\nThe organization's GCP project must be in 'active' status."
+          },
+          "response": [
+            {
+              "name": "Success",
+              "status": "OK",
+              "code": 200,
+              "body": "{\n  \"data\": [\n    {\n      \"datasetId\": \"shopify_raw\",\n      \"tables\": [\n        { \"tableId\": \"orders\", \"type\": \"TABLE\" },\n        { \"tableId\": \"customers\", \"type\": \"TABLE\" }\n      ]\n    },\n    {\n      \"datasetId\": \"stripe_raw\",\n      \"tables\": [\n        { \"tableId\": \"payments\", \"type\": \"TABLE\" },\n        { \"tableId\": \"daily_summary\", \"type\": \"VIEW\" }\n      ]\n    }\n  ],\n  \"statusCode\": 200\n}",
+              "_postman_previewlanguage": "json"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response data is an array', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.data).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Each dataset has datasetId and tables', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    jsonData.data.forEach(function (dataset) {",
+                  "        pm.expect(dataset).to.have.property('datasetId');",
+                  "        pm.expect(dataset).to.have.property('tables');",
+                  "        pm.expect(dataset.tables).to.be.an('array');",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test('Each table has tableId and type', function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    jsonData.data.forEach(function (dataset) {",
+                  "        dataset.tables.forEach(function (table) {",
+                  "            pm.expect(table).to.have.property('tableId');",
+                  "            pm.expect(table).to.have.property('type');",
+                  "        });",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Dataset IDs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/datasets/ids",
+              "host": ["{{base_url}}"],
+              "path": ["datasets", "ids"]
+            },
+            "description": "Protected endpoint - Returns only the dataset IDs for the authenticated user's organization.\n\nRequires a valid Clerk Bearer token with an active organization."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Dataset",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"datasetId\": \"my_dataset\",\n  \"location\": \"US\",\n  \"description\": \"My custom dataset\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/datasets",
+              "host": ["{{base_url}}"],
+              "path": ["datasets"]
+            },
+            "description": "Protected endpoint - Creates a new BigQuery dataset.\n\nBody:\n- datasetId (required): The ID for the new dataset\n- location (optional): GCP region, e.g. 'US', 'EU'\n- description (optional): Description for the dataset\n\nRequires a valid Clerk Bearer token with an active organization."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Run Write Query",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"INSERT INTO `shopify_raw.orders` (id, total_price) VALUES (9999, 100.00)\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/datasets/write-query",
+              "host": ["{{base_url}}"],
+              "path": ["datasets", "write-query"]
+            },
+            "description": "Protected endpoint - Executes a write (DML) query against BigQuery.\n\nBody:\n- query (required): SQL DML statement (INSERT, UPDATE, DELETE, CREATE, etc.)\n\nRequires a valid Clerk Bearer token with an active organization."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Run Read-Only Query",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"SELECT * FROM `shopify_raw.orders` LIMIT 10\",\n  \"startIndex\": 0,\n  \"maxResults\": 50\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/datasets/read-only-query",
+              "host": ["{{base_url}}"],
+              "path": ["datasets", "read-only-query"]
+            },
+            "description": "Protected endpoint - Executes a read-only SELECT query against BigQuery with pagination.\n\nBody:\n- query (required): SQL SELECT statement\n- startIndex (required): Pagination offset (0-based)\n- maxResults (required): Number of rows to return (20, 50, or 100)\n\nRequires a valid Clerk Bearer token with an active organization."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Excel Meta",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "Excel file (.xlsx) to inspect"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/datasets/excel-meta",
+              "host": ["{{base_url}}"],
+              "path": ["datasets", "excel-meta"]
+            },
+            "description": "Protected endpoint - Reads metadata (sheet names, headers, sample rows) from an uploaded Excel file without creating a table.\n\nBody (multipart/form-data):\n- file: The Excel (.xlsx) file\n\nRequires a valid Clerk Bearer token with an active organization."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Tables",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/datasets/{{dataset_id}}/tables",
+              "host": ["{{base_url}}"],
+              "path": ["datasets", "{{dataset_id}}", "tables"]
+            },
+            "description": "Protected endpoint - Returns all tables in a given BigQuery dataset.\n\nPath variables:\n- dataset_id: The BigQuery dataset ID (e.g. shopify_raw)\n\nRequires a valid Clerk Bearer token with an active organization."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
         {
           "name": "Get Table Details",
           "request": {
@@ -196,26 +502,30 @@
           ]
         },
         {
-          "name": "List Datasets",
+          "name": "Get Table Rows",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/datasets",
+              "raw": "{{base_url}}/datasets/{{dataset_id}}/tables/{{table_id}}/rows?startIndex=0&maxResults=50",
               "host": ["{{base_url}}"],
-              "path": ["datasets"]
+              "path": ["datasets", "{{dataset_id}}", "tables", "{{table_id}}", "rows"],
+              "query": [
+                {
+                  "key": "startIndex",
+                  "value": "0",
+                  "description": "Pagination offset (0-based)"
+                },
+                {
+                  "key": "maxResults",
+                  "value": "50",
+                  "description": "Number of rows to return (default: 50)"
+                }
+              ]
             },
-            "description": "Protected endpoint - Returns all BigQuery datasets and their tables for the authenticated user's organization.\n\nRequires a valid Clerk Bearer token with an active organization.\nThe organization's GCP project must be in 'active' status."
+            "description": "Protected endpoint - Returns paginated rows from a BigQuery table.\n\nPath variables:\n- dataset_id: The BigQuery dataset ID\n- table_id: The BigQuery table ID\n\nQuery params:\n- startIndex (optional, default 0): Pagination offset\n- maxResults (optional, default 50): Number of rows to return\n\nRequires a valid Clerk Bearer token with an active organization."
           },
-          "response": [
-            {
-              "name": "Success",
-              "status": "OK",
-              "code": 200,
-              "body": "{\n  \"data\": [\n    {\n      \"datasetId\": \"shopify_raw\",\n      \"tables\": [\n        { \"tableId\": \"orders\", \"type\": \"TABLE\" },\n        { \"tableId\": \"customers\", \"type\": \"TABLE\" }\n      ]\n    },\n    {\n      \"datasetId\": \"stripe_raw\",\n      \"tables\": [\n        { \"tableId\": \"payments\", \"type\": \"TABLE\" },\n        { \"tableId\": \"daily_summary\", \"type\": \"VIEW\" }\n      ]\n    }\n  ],\n  \"statusCode\": 200\n}",
-              "_postman_previewlanguage": "json"
-            }
-          ],
+          "response": [],
           "event": [
             {
               "listen": "test",
@@ -224,30 +534,715 @@
                 "exec": [
                   "pm.test('Status code is 200', function () {",
                   "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test('Response data is an array', function () {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.expect(jsonData.data).to.be.an('array');",
-                  "});",
-                  "",
-                  "pm.test('Each dataset has datasetId and tables', function () {",
-                  "    var jsonData = pm.response.json();",
-                  "    jsonData.data.forEach(function (dataset) {",
-                  "        pm.expect(dataset).to.have.property('datasetId');",
-                  "        pm.expect(dataset).to.have.property('tables');",
-                  "        pm.expect(dataset.tables).to.be.an('array');",
-                  "    });",
-                  "});",
-                  "",
-                  "pm.test('Each table has tableId and type', function () {",
-                  "    var jsonData = pm.response.json();",
-                  "    jsonData.data.forEach(function (dataset) {",
-                  "        dataset.tables.forEach(function (table) {",
-                  "            pm.expect(table).to.have.property('tableId');",
-                  "            pm.expect(table).to.have.property('type');",
-                  "        });",
-                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Table",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tableId\": \"my_table\",\n  \"schema\": [\n    { \"name\": \"id\", \"type\": \"INTEGER\", \"mode\": \"REQUIRED\", \"description\": \"Primary key\" },\n    { \"name\": \"name\", \"type\": \"STRING\", \"mode\": \"NULLABLE\", \"description\": \"Name\" },\n    { \"name\": \"created_at\", \"type\": \"TIMESTAMP\", \"mode\": \"NULLABLE\", \"description\": null }\n  ],\n  \"description\": \"My custom table\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/datasets/{{dataset_id}}/tables",
+              "host": ["{{base_url}}"],
+              "path": ["datasets", "{{dataset_id}}", "tables"]
+            },
+            "description": "Protected endpoint - Creates a new BigQuery table with an explicit schema.\n\nPath variables:\n- dataset_id: The BigQuery dataset ID\n\nBody:\n- tableId (required): The ID for the new table\n- schema (required): Array of SchemaField objects (name, type, mode, description)\n- description (optional): Description for the table\n\nRequires a valid Clerk Bearer token with an active organization."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Table From File",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "CSV, Excel (.xlsx), or JSON file to upload"
+                },
+                {
+                  "key": "tableId",
+                  "value": "my_table",
+                  "type": "text"
+                },
+                {
+                  "key": "fileType",
+                  "value": "csv",
+                  "type": "text",
+                  "description": "One of: csv, excel, json"
+                },
+                {
+                  "key": "description",
+                  "value": "Imported from file",
+                  "type": "text"
+                },
+                {
+                  "key": "sheet",
+                  "value": "",
+                  "type": "text",
+                  "description": "Sheet name (Excel only, optional)"
+                },
+                {
+                  "key": "startRow",
+                  "value": "",
+                  "type": "text",
+                  "description": "Row number to start reading data from (Excel only, optional)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/datasets/{{dataset_id}}/tables/from-file",
+              "host": ["{{base_url}}"],
+              "path": ["datasets", "{{dataset_id}}", "tables", "from-file"]
+            },
+            "description": "Protected endpoint - Creates a new BigQuery table by uploading a CSV, Excel, or JSON file.\n\nPath variables:\n- dataset_id: The BigQuery dataset ID\n\nBody (multipart/form-data):\n- file (required): The data file\n- tableId (required): The ID for the new table\n- fileType (required): One of 'csv', 'excel', 'json'\n- description (optional): Description for the table\n- sheet (optional, Excel only): Sheet name to import\n- startRow (optional, Excel only): Row number where data begins\n\nRequires a valid Clerk Bearer token with an active organization."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Table",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated table description\",\n  \"fieldDescriptions\": [\n    { \"path\": \"id\", \"description\": \"Primary key\" },\n    { \"path\": \"customer_id\", \"description\": \"Reference to customer\" }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/datasets/{{dataset_id}}/tables/{{table_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["datasets", "{{dataset_id}}", "tables", "{{table_id}}"]
+            },
+            "description": "Protected endpoint - Updates a BigQuery table's description and/or field descriptions.\n\nPath variables:\n- dataset_id: The BigQuery dataset ID\n- table_id: The BigQuery table ID\n\nBody:\n- description (optional): New table description\n- fieldDescriptions (optional): Array of { path, description } objects for column descriptions\n\nReturns 204 No Content on success.\n\nRequires a valid Clerk Bearer token with an active organization."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 204', function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Table",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/datasets/{{dataset_id}}/tables/{{table_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["datasets", "{{dataset_id}}", "tables", "{{table_id}}"]
+            },
+            "description": "Protected endpoint - Permanently deletes a BigQuery table.\n\nPath variables:\n- dataset_id: The BigQuery dataset ID\n- table_id: The BigQuery table ID\n\nReturns 204 No Content on success.\n\nRequires a valid Clerk Bearer token with an active organization."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 204', function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Distinct Column Values",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/datasets/{{dataset_id}}/tables/{{table_id}}/columns/{{column}}/distinct-values",
+              "host": ["{{base_url}}"],
+              "path": ["datasets", "{{dataset_id}}", "tables", "{{table_id}}", "columns", "{{column}}", "distinct-values"]
+            },
+            "description": "Protected endpoint - Returns the distinct values for a given column in a BigQuery table (used to populate filter dropdowns).\n\nPath variables:\n- dataset_id: The BigQuery dataset ID\n- table_id: The BigQuery table ID\n- column: The column name\n\nRequires a valid Clerk Bearer token with an active organization."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Dashboards",
+      "item": [
+        {
+          "name": "List Dashboards",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/dashboards",
+              "host": ["{{base_url}}"],
+              "path": ["dashboards"]
+            },
+            "description": "Protected endpoint - Returns all dashboards for the authenticated user's organization, including favourite status.\n\nRequires a valid Clerk Bearer token with an active organization."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Dashboard",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"My Dashboard\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/dashboards",
+              "host": ["{{base_url}}"],
+              "path": ["dashboards"]
+            },
+            "description": "Protected endpoint - Creates a new empty dashboard.\n\nBody:\n- title (required): The dashboard title\n\nRequires a valid Clerk Bearer token with an active organization.",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status code is 201 or 200', function () {",
+                    "    pm.expect([200, 201]).to.include(pm.response.code);",
+                    "});",
+                    "",
+                    "// Save dashboard_id for subsequent requests",
+                    "var jsonData = pm.response.json();",
+                    "if (jsonData.id) {",
+                    "    pm.collectionVariables.set('dashboard_id', jsonData.id);",
+                    "}"
+                  ]
+                }
+              }
+            ]
+          },
+          "response": []
+        },
+        {
+          "name": "Get Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/dashboards/{{dashboard_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["dashboards", "{{dashboard_id}}"]
+            },
+            "description": "Protected endpoint - Returns a single dashboard with all its widgets.\n\nPath variables:\n- dashboard_id: The dashboard ID\n\nRequires a valid Clerk Bearer token with an active organization."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Dashboard",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Renamed Dashboard\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/dashboards/{{dashboard_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["dashboards", "{{dashboard_id}}"]
+            },
+            "description": "Protected endpoint - Renames a dashboard.\n\nPath variables:\n- dashboard_id: The dashboard ID\n\nBody:\n- title (required): The new dashboard title\n\nRequires a valid Clerk Bearer token with an active organization."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Dashboard",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/dashboards/{{dashboard_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["dashboards", "{{dashboard_id}}"]
+            },
+            "description": "Protected endpoint - Permanently deletes a dashboard and all its widgets.\n\nPath variables:\n- dashboard_id: The dashboard ID\n\nRequires a valid Clerk Bearer token with an active organization."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Toggle Favourite",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/dashboards/{{dashboard_id}}/favourite",
+              "host": ["{{base_url}}"],
+              "path": ["dashboards", "{{dashboard_id}}", "favourite"]
+            },
+            "description": "Protected endpoint - Toggles the favourite status of a dashboard for the current user.\n\nPath variables:\n- dashboard_id: The dashboard ID\n\nRequires a valid Clerk Bearer token with an active organization."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 or 201', function () {",
+                  "    pm.expect([200, 201]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Duplicate Dashboard",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/dashboards/{{dashboard_id}}/duplicate",
+              "host": ["{{base_url}}"],
+              "path": ["dashboards", "{{dashboard_id}}", "duplicate"]
+            },
+            "description": "Protected endpoint - Creates a copy of an existing dashboard including all its widgets.\n\nPath variables:\n- dashboard_id: The dashboard ID to duplicate\n\nRequires a valid Clerk Bearer token with an active organization."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 or 201', function () {",
+                  "    pm.expect([200, 201]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Add Widget",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"report\",\n  \"config\": {\n    \"title\": \"Revenue Over Time\",\n    \"dataSource\": {\n      \"datasetId\": \"shopify_raw\",\n      \"tableId\": \"orders\"\n    },\n    \"dimension\": \"created_at\",\n    \"dimensionGranularity\": [\"day\"],\n    \"groupBy\": null,\n    \"groupByGranularity\": null,\n    \"groupByIncludeEmpty\": false,\n    \"metrics\": [\n      {\n        \"id\": \"metric_1\",\n        \"operation\": \"sum\",\n        \"column\": \"total_price\"\n      }\n    ],\n    \"orderBy\": {\n      \"target\": \"created_at\",\n      \"direction\": \"asc\"\n    },\n    \"visualization\": {\n      \"type\": \"bar\",\n      \"stacked\": false\n    },\n    \"filters\": []\n  },\n  \"x\": 0,\n  \"y\": 0,\n  \"w\": 6,\n  \"h\": 4\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/dashboards/{{dashboard_id}}/widgets",
+              "host": ["{{base_url}}"],
+              "path": ["dashboards", "{{dashboard_id}}", "widgets"]
+            },
+            "description": "Protected endpoint - Adds a new widget to a dashboard.\n\nPath variables:\n- dashboard_id: The dashboard ID\n\nBody:\n- type (required): Widget type — currently only 'report'\n- config (required): WidgetReportConfigDto — see schema\n- x, y, w, h (required): Grid position and size (integers)\n\nConfig fields:\n- title: Widget title\n- dataSource: { datasetId, tableId }\n- dimension: Time/category column for X axis\n- dimensionGranularity: ['day' | 'month' | 'year']\n- groupBy: Optional secondary grouping column\n- groupByGranularity: ['day' | 'month' | 'year']\n- groupByIncludeEmpty: Whether to include null groups\n- metrics: Array of { id, operation (sum|avg|count|count_distinct|min|max), column }\n- orderBy: { target, direction ('asc'|'desc') }\n- visualization: { type ('bar'|'line'|'pie'|'single_metric'), stacked }\n- filters: Array of filter objects\n\nRequires a valid Clerk Bearer token with an active organization.",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Status code is 200 or 201', function () {",
+                    "    pm.expect([200, 201]).to.include(pm.response.code);",
+                    "});",
+                    "",
+                    "// Save widget_id for subsequent requests",
+                    "var jsonData = pm.response.json();",
+                    "if (jsonData.id) {",
+                    "    pm.collectionVariables.set('widget_id', jsonData.id);",
+                    "}"
+                  ]
+                }
+              }
+            ]
+          },
+          "response": []
+        },
+        {
+          "name": "Batch Update Widgets",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"widgets\": [\n    { \"id\": \"widget_id_1\", \"x\": 0, \"y\": 0, \"w\": 6, \"h\": 4 },\n    { \"id\": \"widget_id_2\", \"x\": 6, \"y\": 0, \"w\": 6, \"h\": 4 }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/dashboards/{{dashboard_id}}/widgets",
+              "host": ["{{base_url}}"],
+              "path": ["dashboards", "{{dashboard_id}}", "widgets"]
+            },
+            "description": "Protected endpoint - Updates the grid positions and sizes of multiple widgets at once (used when rearranging a dashboard layout).\n\nPath variables:\n- dashboard_id: The dashboard ID\n\nBody:\n- widgets (required): Array of { id, x, y, w, h } — each widget's ID and its new grid coordinates\n\nRequires a valid Clerk Bearer token with an active organization."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Widget",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"config\": {\n    \"title\": \"Updated Widget Title\",\n    \"dataSource\": {\n      \"datasetId\": \"shopify_raw\",\n      \"tableId\": \"orders\"\n    },\n    \"dimension\": \"created_at\",\n    \"dimensionGranularity\": [\"month\"],\n    \"groupBy\": null,\n    \"groupByGranularity\": null,\n    \"groupByIncludeEmpty\": false,\n    \"metrics\": [\n      {\n        \"id\": \"metric_1\",\n        \"operation\": \"count\",\n        \"column\": null\n      }\n    ],\n    \"orderBy\": null,\n    \"visualization\": {\n      \"type\": \"line\",\n      \"stacked\": false\n    },\n    \"filters\": []\n  },\n  \"x\": 0,\n  \"y\": 0,\n  \"w\": 12,\n  \"h\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/dashboards/{{dashboard_id}}/widgets/{{widget_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["dashboards", "{{dashboard_id}}", "widgets", "{{widget_id}}"]
+            },
+            "description": "Protected endpoint - Updates a single widget's configuration and/or position.\n\nPath variables:\n- dashboard_id: The dashboard ID\n- widget_id: The widget ID\n\nBody (all fields optional):\n- config: WidgetReportConfigDto — updated widget configuration\n- x, y, w, h: Updated grid position/size\n\nRequires a valid Clerk Bearer token with an active organization."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Widget",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/dashboards/{{dashboard_id}}/widgets/{{widget_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["dashboards", "{{dashboard_id}}", "widgets", "{{widget_id}}"]
+            },
+            "description": "Protected endpoint - Removes a widget from a dashboard.\n\nPath variables:\n- dashboard_id: The dashboard ID\n- widget_id: The widget ID\n\nRequires a valid Clerk Bearer token with an active organization."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Validate Widget Config",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dataSource\": {\n    \"datasetId\": \"shopify_raw\",\n    \"tableId\": \"orders\"\n  },\n  \"dimension\": \"created_at\",\n  \"dimensionGranularity\": [\"day\"],\n  \"groupBy\": null,\n  \"groupByGranularity\": null,\n  \"groupByIncludeEmpty\": false,\n  \"metrics\": [\n    {\n      \"id\": \"metric_1\",\n      \"operation\": \"sum\",\n      \"column\": \"total_price\"\n    }\n  ],\n  \"orderBy\": null,\n  \"filters\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/dashboards/widget-data/validate",
+              "host": ["{{base_url}}"],
+              "path": ["dashboards", "widget-data", "validate"]
+            },
+            "description": "Protected endpoint - Validates a widget ReportConfig without executing the query. Useful for checking config correctness before saving.\n\nBody: ReportConfigDto — the widget query configuration to validate.\n\nReturns 200 with validation result.\n\nRequires a valid Clerk Bearer token with an active organization."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Execute Widget Query",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"dataSource\": {\n    \"datasetId\": \"shopify_raw\",\n    \"tableId\": \"orders\"\n  },\n  \"dimension\": \"created_at\",\n  \"dimensionGranularity\": [\"day\"],\n  \"groupBy\": null,\n  \"groupByGranularity\": null,\n  \"groupByIncludeEmpty\": false,\n  \"metrics\": [\n    {\n      \"id\": \"metric_1\",\n      \"operation\": \"sum\",\n      \"column\": \"total_price\"\n    }\n  ],\n  \"orderBy\": {\n    \"target\": \"created_at\",\n    \"direction\": \"asc\"\n  },\n  \"filters\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/dashboards/widget-data",
+              "host": ["{{base_url}}"],
+              "path": ["dashboards", "widget-data"]
+            },
+            "description": "Protected endpoint - Executes a single widget query and returns the result data.\n\nBody: ReportConfigDto\n- dataSource: { datasetId, tableId }\n- dimension: Column for X axis / time axis (optional)\n- dimensionGranularity: ['day' | 'month' | 'year'] (optional)\n- groupBy: Secondary grouping column (optional)\n- groupByGranularity: ['day' | 'month' | 'year'] (optional)\n- groupByIncludeEmpty: Whether to include null groups\n- metrics: Array of { id, operation (sum|avg|count|count_distinct|min|max), column }\n- orderBy: { target, direction } (optional)\n- filters: Array of filter objects (optional)\n\nRequires a valid Clerk Bearer token with an active organization."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 or 201', function () {",
+                  "    pm.expect([200, 201]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Execute Widget Queries (Batch)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"queries\": [\n    {\n      \"dataSource\": { \"datasetId\": \"shopify_raw\", \"tableId\": \"orders\" },\n      \"dimension\": \"created_at\",\n      \"dimensionGranularity\": [\"day\"],\n      \"groupBy\": null,\n      \"groupByGranularity\": null,\n      \"groupByIncludeEmpty\": false,\n      \"metrics\": [\n        { \"id\": \"m1\", \"operation\": \"sum\", \"column\": \"total_price\" }\n      ],\n      \"orderBy\": null,\n      \"filters\": []\n    },\n    {\n      \"dataSource\": { \"datasetId\": \"shopify_raw\", \"tableId\": \"orders\" },\n      \"dimension\": null,\n      \"dimensionGranularity\": null,\n      \"groupBy\": null,\n      \"groupByGranularity\": null,\n      \"groupByIncludeEmpty\": false,\n      \"metrics\": [\n        { \"id\": \"m1\", \"operation\": \"count\", \"column\": null }\n      ],\n      \"orderBy\": null,\n      \"filters\": []\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/dashboards/widget-data/batch",
+              "host": ["{{base_url}}"],
+              "path": ["dashboards", "widget-data", "batch"]
+            },
+            "description": "Protected endpoint - Executes multiple widget queries in a single request (used when loading an entire dashboard).\n\nBody:\n- queries (required): Array of ReportConfigDto objects\n\nReturns results in the same order as the input queries.\n\nRequires a valid Clerk Bearer token with an active organization."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 or 201', function () {",
+                  "    pm.expect([200, 201]).to.include(pm.response.code);",
                   "});"
                 ]
               }

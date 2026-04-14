@@ -1,10 +1,8 @@
 import { useNavigate } from "react-router-dom"
-import { toast } from "sonner"
-import { LayoutGrid, Database, Table2, Plus, MessageSquare, ChevronRight, Star } from "lucide-react"
+import { LayoutGrid, Database, Table2, ChevronRight, Star } from "lucide-react"
 import { useUser } from "@clerk/clerk-react"
-import { useCreateDashboard } from "@/hooks/use-dashboards"
 import { useHomeStats } from "@/hooks/use-home"
-import { formatDate, dashboardColor } from "@/components/dashboard-row"
+import { formatDate, dashboardColor } from "@/components/dashboard/dashboard-row"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -13,33 +11,13 @@ export default function HomePage() {
   const navigate = useNavigate()
   const { user } = useUser()
   const { data, isLoading } = useHomeStats()
-  const createDashboard = useCreateDashboard()
-
-  async function handleNewReport() {
-    try {
-      const dashboard = await createDashboard.mutateAsync("New Dashboard")
-      navigate(`/reports/${dashboard.id}`)
-    } catch {
-      toast.error("Failed to create report")
-    }
-  }
 
   return (
-    <div className="flex flex-col gap-4 px-4 pt-8 max-w-5xl mx-auto w-full h-full overflow-auto">
+    <div className="flex flex-col gap-4 px-4 pt-16 max-w-5xl mx-auto w-full h-full overflow-auto">
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Welcome back, {user?.firstName ?? user?.username ?? "there"}</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => navigate("/ai-chat")} className="gap-2">
-            <MessageSquare className="size-4" />
-            Ask AI
-          </Button>
-          <Button variant="outline" onClick={() => navigate("/data-management/data-studio")} className="gap-2">
-            <Database className="size-4" />
-            Explore Data
-          </Button>
         </div>
       </div>
 

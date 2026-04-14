@@ -2,7 +2,7 @@ import * as React from "react"
 import { ListFilter, Pencil, Plus, Trash } from "lucide-react"
 import { useReportConfig, useReportActions, type ReportFilter } from "@/contexts/report-builder-context"
 import { Button } from "@/components/ui/button"
-import { FilterDialog } from "@/components/filter-dialog"
+import { FilterDialog } from "@/components/report/filter-dialog"
 
 export function FilterSection() {
   const { dataSource, filters } = useReportConfig()
