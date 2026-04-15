@@ -66,13 +66,13 @@ export function ChatInterface({ threadId, onThreadCreated }: ChatInterfaceProps)
       {/* Message list */}
       {(hasMessages || isLoading) ? (
         <div className="flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-3xl px-4 py-12 pb-32 space-y-6">
+          <div className="mx-auto max-w-3xl py-12 pb-32 space-y-6">
             {isLoading && (
               <div className="space-y-6">
                 {Array.from({ length: 3 }).map((_, i) => (
                   <div key={i} className="space-y-2">
-                    <div className="h-4 bg-gray-100 rounded animate-pulse w-3/4" />
-                    <div className="h-4 bg-gray-100 rounded animate-pulse w-1/2" />
+                    <div className="h-4 bg-gray-50 rounded animate-pulse w-3/4" />
+                    <div className="h-4 bg-gray-50 rounded animate-pulse w-1/2" />
                   </div>
                 ))}
               </div>
@@ -162,7 +162,7 @@ export function ChatInterface({ threadId, onThreadCreated }: ChatInterfaceProps)
 
       {/* Docked input — only shown when there are messages */}
       {(hasMessages || isLoading) && (
-        <div className="absolute bottom-0 left-0 right-0 px-4 py-4">
+        <div className="absolute bottom-0 left-0 right-0 pb-6">
           <div className="mx-auto max-w-3xl">
             <ChatInput {...chatInputProps} />
             {error && <ErrorMessage message={error.message} className="mt-2" />}

@@ -27,18 +27,6 @@ export interface Dashboard {
   updatedAt: string
 }
 
-export interface FavouriteDashboard {
-  id: string
-  title: string
-  updatedAt: string
-}
-
-export interface HomeStats {
-  reportsCount: number
-  datasetsCount: number
-  tablesCount: number
-  favouriteDashboards: FavouriteDashboard[]
-}
 
 export type GcpStatus =
   | 'pending'

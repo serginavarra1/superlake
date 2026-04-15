@@ -127,9 +127,9 @@ function TableDetailsContent({ details, onDelete }: { details: TableDetails; onD
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden px-4 py-2">
       {/* Header */}
-      <div className="flex items-center gap-4 px-4 py-2 shrink-0">
+      <div className="flex items-center gap-4 shrink-0 mb-2">
         <h2 className="text-sm font-semibold">
           <span className="text-muted-foreground font-normal">{details.datasetId}</span>
           <span className="text-muted-foreground font-normal mx-2">/</span>
@@ -200,7 +200,7 @@ function TableDetailsContent({ details, onDelete }: { details: TableDetails; onD
       />
 
       {/* Scrollable body */}
-      <div className="flex-1 overflow-y-auto px-4 space-y-4">
+      <div className="flex-1 overflow-y-auto space-y-4">
         {/* Details list */}
         <dl className="rounded-lg border divide-y text-sm">
           {details.description && (

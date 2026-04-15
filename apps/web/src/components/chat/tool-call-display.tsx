@@ -75,22 +75,24 @@ const TOOL_RENDERERS: Record<string, { input?: ToolInputRenderer; result?: ToolR
       if (!Array.isArray(tables) || tables.length === 0)
         return <span className="text-muted-foreground">No tables found</span>
       return (
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="border-b border-border">
-              <th className="pb-1 pr-3 text-left font-medium text-muted-foreground">Table</th>
-              <th className="pb-1 text-left font-medium text-muted-foreground">Type</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tables.map((t) => (
-              <tr key={t.tableId} className="border-b border-border/50 last:border-0">
-                <td className="py-0.5 pr-3 font-mono">{t.tableId}</td>
-                <td className="py-0.5 text-muted-foreground">{t.type}</td>
+        <div className="overflow-hidden rounded-md border border-border">
+          <table className="w-full text-xs">
+            <thead className="bg-muted/50 border-b">
+              <tr>
+                <th className="px-3 py-1.5 text-left font-medium text-muted-foreground">Table</th>
+                <th className="px-3 py-1.5 text-left font-medium text-muted-foreground">Type</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-border/50">
+              {tables.map((t) => (
+                <tr key={t.tableId} className="hover:bg-muted/30 transition-colors">
+                  <td className="px-3 py-1.5 font-mono">{t.tableId}</td>
+                  <td className="px-3 py-1.5 text-muted-foreground">{t.type}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )
     },
   },
@@ -136,26 +138,28 @@ const TOOL_RENDERERS: Record<string, { input?: ToolInputRenderer; result?: ToolR
             )}
           </div>
           {Array.isArray(details.schema) && details.schema.length > 0 && (
-            <table className="w-full text-[11px]">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="pb-1 pr-3 text-left font-medium text-muted-foreground">Field</th>
-                  <th className="pb-1 pr-3 text-left font-medium text-muted-foreground">Type</th>
-                  <th className="pb-1 pr-3 text-left font-medium text-muted-foreground">Mode</th>
-                  <th className="pb-1 text-left font-medium text-muted-foreground">Description</th>
-                </tr>
-              </thead>
-              <tbody>
-                {details.schema.map((f) => (
-                  <tr key={f.name} className="border-b border-border/50 last:border-0">
-                    <td className="py-0.5 pr-3 font-mono">{f.name}</td>
-                    <td className="py-0.5 pr-3 text-muted-foreground">{f.type}</td>
-                    <td className="py-0.5 pr-3 text-muted-foreground">{f.mode}</td>
-                    <td className="py-0.5 text-muted-foreground">{f.description ?? ''}</td>
+            <div className="overflow-hidden rounded-md border border-border">
+              <table className="w-full text-[11px]">
+                <thead className="bg-muted/50 border-b">
+                  <tr>
+                    <th className="px-3 py-1.5 text-left font-medium text-muted-foreground">Field</th>
+                    <th className="px-3 py-1.5 text-left font-medium text-muted-foreground">Type</th>
+                    <th className="px-3 py-1.5 text-left font-medium text-muted-foreground">Mode</th>
+                    <th className="px-3 py-1.5 text-left font-medium text-muted-foreground">Description</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-border/50">
+                  {details.schema.map((f) => (
+                    <tr key={f.name} className="hover:bg-muted/30 transition-colors">
+                      <td className="px-3 py-1.5 font-mono">{f.name}</td>
+                      <td className="px-3 py-1.5 text-muted-foreground">{f.type}</td>
+                      <td className="px-3 py-1.5 text-muted-foreground">{f.mode}</td>
+                      <td className="px-3 py-1.5 text-muted-foreground">{f.description ?? ''}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )
@@ -181,23 +185,23 @@ const TOOL_RENDERERS: Record<string, { input?: ToolInputRenderer; result?: ToolR
       return (
         <div className="space-y-1.5">
           <p className="text-muted-foreground text-xs">{totalRows} row{totalRows !== 1 ? 's' : ''}</p>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-md border border-border">
             <table className="w-full text-[11px]">
-              <thead>
-                <tr className="border-b border-border">
+              <thead className="bg-muted/50 border-b">
+                <tr>
                   {columns.map((col) => (
-                    <th key={col} className="pb-1 pr-3 text-left font-medium text-muted-foreground whitespace-nowrap">
+                    <th key={col} className="px-3 py-1.5 text-left font-medium text-muted-foreground whitespace-nowrap">
                       {col}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-border/50">
                 {rows.map((row, i) => (
                   // eslint-disable-next-line react/no-array-index-key -- query result rows have no stable ID
-                  <tr key={i} className="border-b border-border/50 last:border-0">
+                  <tr key={i} className="hover:bg-muted/30 transition-colors">
                     {columns.map((col) => (
-                      <td key={col} className="py-0.5 pr-3 font-mono whitespace-nowrap">
+                      <td key={col} className="px-3 py-1.5 font-mono whitespace-nowrap">
                         {row[col] === null || row[col] === undefined
                           ? <span className="text-muted-foreground italic">null</span>
                           : String(row[col])}
@@ -234,9 +238,6 @@ const TOOL_RENDERERS: Record<string, { input?: ToolInputRenderer; result?: ToolR
     },
   },
 }
-
-// 'run-write-query' is a legacy alias for 'runWriteQueryTool'
-TOOL_RENDERERS['run-write-query'] = TOOL_RENDERERS['runWriteQueryTool']
 
 // 'createVisualizationTool' is intentionally absent from TOOL_RENDERERS:
 // it requires a hook (useReportQuery) and is handled by VisualizationToolResult below.
@@ -329,7 +330,7 @@ function ToolCallItem({ toolCall, onApprove, onDecline }: ToolCallItemProps) {
       <div
         className={cn(
           'flex w-full items-center gap-2 rounded-md px-2.5 py-2.5 text-xs',
-          'bg-muted/40 text-muted-foreground border-x border-t',
+          'bg-gray-50 text-muted-foreground border-x border-t',
           hasDetails ? 'rounded-b-none' : '',
         )}
       >
@@ -352,11 +353,11 @@ function ToolCallItem({ toolCall, onApprove, onDecline }: ToolCallItemProps) {
       {hasDetails && (
         <>
           {isVisualization ? (
-            <div className="rounded-b-md bg-muted/40 text-xs font-mono border">
+            <div className="rounded-b-md bg-gray-50 text-xs font-mono border">
               <VisualizationToolResult args={toolCall.args ?? {}} result={toolCall.result} />
             </div>
           ) : (
-            <div className="rounded-b-md bg-muted/40 px-2.5 py-2 text-xs font-mono border">
+            <div className="rounded-b-md bg-gray-50 px-2.5 py-2 text-xs font-mono border">
               {inputNode !== null && (
                 <>
                   <p className="mb-1 text-muted-foreground font-sans font-medium text-xs uppercase tracking-wide">

@@ -14,9 +14,8 @@ export function UserMessage({ content }: { content: string }) {
 
 export function AssistantMessage({ content, streaming }: { content: string; streaming?: boolean }) {
   return (
-    <div className="prose prose-base max-w-none text-foreground">
+    <div className={cn("prose prose-base max-w-none text-foreground", streaming && "prose-streaming")}>
       <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
-      {streaming && <span className="animate-pulse">▋</span>}
     </div>
   )
 }

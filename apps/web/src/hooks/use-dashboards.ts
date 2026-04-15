@@ -11,6 +11,14 @@ export function useDashboards() {
   })
 }
 
+export function useFavouriteDashboards() {
+  return useQuery({
+    queryKey: ['dashboards', 'favourites'],
+    queryFn: () =>
+      apiFetch<{ data: Dashboard[] }>('/dashboards/favourites').then((res) => res.data),
+  })
+}
+
 export function useDashboard(id: string) {
   return useQuery({
     queryKey: ['dashboards', id],

@@ -33,6 +33,15 @@ export class DashboardsService {
     return dashboards.map((d) => ({ ...d, isFavourite: favSet.has(d.id) }));
   }
 
+  async getFavourites(clerkOrgId: string, clerkUserId: string) {
+    const favs = await this.prisma.userFavourite.findMany({
+      where: { clerkUserId, dashboard: { organization: { clerkOrgId } } },
+      include: { dashboard: true },
+      orderBy: { dashboard: { updatedAt: 'desc' } },
+    });
+    return favs.map((f) => ({ ...f.dashboard, isFavourite: true }));
+  }
+
   async toggleFavourite(clerkOrgId: string, clerkUserId: string, dashboardId: string) {
     const dashboard = await this.prisma.dashboard.findFirst({
       where: { id: dashboardId, organization: { clerkOrgId } },

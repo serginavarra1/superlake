@@ -26,6 +26,11 @@ export class DashboardsController {
     return this.dashboardsService.create(user.orgId!, dto);
   }
 
+  @Get('favourites')
+  async getFavourites(@CurrentUser() user: ClerkUser) {
+    return this.dashboardsService.getFavourites(user.orgId!, user.userId);
+  }
+
   @Get(':id')
   async findOne(@CurrentUser() user: ClerkUser, @Param('id') id: string) {
     return this.dashboardsService.findOne(user.orgId!, id);
