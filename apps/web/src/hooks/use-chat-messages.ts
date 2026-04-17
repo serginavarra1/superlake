@@ -1,4 +1,4 @@
-import { useAuth, useUser } from '@clerk/clerk-react'
+import { useAuth, useUser, useOrganization } from '@clerk/clerk-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { createMastraClient } from '@/lib/mastra-client'
@@ -206,6 +206,7 @@ export function useChatMessages({ agentId, threadId, onThreadCreated }: UseChatM
   const queryClient = useQueryClient()
   const { getToken } = useAuth()
   const { user } = useUser()
+  const { organization } = useOrganization()
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
@@ -497,7 +498,7 @@ export function useChatMessages({ agentId, threadId, onThreadCreated }: UseChatM
       abortRef.current = controller
 
       const client = createMastraClient(token, controller.signal)
-      const resourceId = user?.id ?? 'anonymous'
+      const resourceId = `${organization!.id}:${user!.id}`
 
       const userMessage: ChatMessage = {
         id: crypto.randomUUID(),

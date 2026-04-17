@@ -1,4 +1,4 @@
-import { useAuth } from '@clerk/clerk-react'
+import { useAuth, useOrganization, useUser } from '@clerk/clerk-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createMastraClient } from '@/lib/mastra-client'
 
@@ -22,9 +22,11 @@ export function useDeleteConversation() {
 
 export function useConversations() {
   const { getToken } = useAuth()
+  const { organization } = useOrganization()
+  const { user } = useUser()
 
   return useQuery({
-    queryKey: ['conversations'],
+    queryKey: ['conversations', organization?.id, user?.id],
     queryFn: async () => {
       const token = await getToken()
       const client = createMastraClient(token!)

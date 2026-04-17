@@ -6,7 +6,7 @@ import { Observability, DefaultExporter, CloudExporter, SensitiveDataFilter } fr
 import type { SpanOutputProcessor, AnySpan } from '@mastra/core/observability';
 import { MASTRA_RESOURCE_ID_KEY } from '@mastra/core/request-context';
 import { analyticsAgent } from './agents/analytics-agent';
-import { extractUserIdFromToken } from '../lib/jwt';
+import { extractUserIdFromToken, extractOrgIdFromToken } from '../lib/jwt';
 
 class TokenLogger implements SpanOutputProcessor {
   name = 'token-logger';
@@ -40,13 +40,14 @@ export const mastra = new Mastra({
         handler: async (c, next) => {
           const authHeader = c.req.header('Authorization');
           const userId = extractUserIdFromToken(authHeader);
+          const orgId = extractOrgIdFromToken(authHeader);
 
-          if (!userId) {
+          if (!userId || !orgId) {
             return c.json({ error: 'Unauthorized' }, 401);
           }
 
           const requestContext = c.get('requestContext');
-          requestContext.set(MASTRA_RESOURCE_ID_KEY, userId);
+          requestContext.set(MASTRA_RESOURCE_ID_KEY, `${orgId}:${userId}`);
           requestContext.set('auth-token', authHeader!);
 
           return next();
