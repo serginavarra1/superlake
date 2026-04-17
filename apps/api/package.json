@@ -36,6 +36,7 @@
     "class-validator": "^0.14.1",
     "csv-parse": "^6.1.0",
     "date-fns": "^4.1.0",
+    "google-auth-library": "^10.1.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "svix": "^1.85.0",

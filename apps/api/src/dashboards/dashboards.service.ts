@@ -1,10 +1,10 @@
 import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { BigQuery } from '@google-cloud/bigquery';
 import { GcpStatus, Prisma } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import { OrganizationsService } from '../organizations/organizations.service';
+import { BigQueryClientFactory } from '../gcp/bigquery-client.factory';
 import { handleGcpError } from '../common/gcp-error';
 import { buildQuery, serialise } from './dashboard.utils'
 import { BatchUpdateWidgetsDto, CreateDashboardDto, CreateWidgetDto, ReportConfigDto, WidgetReportConfigDto, UpdateDashboardDto, UpdateWidgetDto } from './dashboards.types';
@@ -16,6 +16,7 @@ export class DashboardsService {
   constructor(
     private prisma: PrismaService,
     private readonly organizationsService: OrganizationsService,
+    private readonly bigqueryClientFactory: BigQueryClientFactory,
   ) {}
 
   async list(clerkOrgId: string, clerkUserId: string) {
@@ -241,7 +242,7 @@ export class DashboardsService {
       );
     }
 
-    const bigquery = new BigQuery({ projectId: organization.gcpProjectId! });
+    const bigquery = this.bigqueryClientFactory.getBigQueryReadClient(organization.gcpProjectId!);
 
     const settled = await Promise.allSettled(
       queries.map(async (config) => {
@@ -278,7 +279,7 @@ export class DashboardsService {
     const { sql, params, types } = buildQuery(config);
     this.logger.debug(`Running widget data query:\n${sql}`);
 
-    const bigquery = new BigQuery({ projectId: organization.gcpProjectId! });
+    const bigquery = this.bigqueryClientFactory.getBigQueryReadClient(organization.gcpProjectId!);
     try {
       const [rows] = await bigquery.query({
         query: sql,

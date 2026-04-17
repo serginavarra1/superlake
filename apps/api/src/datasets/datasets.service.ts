@@ -10,6 +10,7 @@ import { Storage } from '@google-cloud/storage';
 import { randomUUID } from 'crypto';
 import * as XLSX from 'xlsx';
 import { OrganizationsService } from '../organizations/organizations.service';
+import { BigQueryClientFactory } from '../gcp/bigquery-client.factory';
 import { handleGcpError } from '../common/gcp-error';
 import { GcpStatus } from '@prisma/client';
 import { DatasetInfo, SchemaField, TableDetails } from './datasets.types';
@@ -28,7 +29,10 @@ import {
 export class DatasetsService {
   private readonly logger = new Logger(DatasetsService.name);
 
-  constructor(private organizationsService: OrganizationsService) {}
+  constructor(
+    private organizationsService: OrganizationsService,
+    private bigqueryClientFactory: BigQueryClientFactory,
+  ) {}
 
   private async getActiveOrg(clerkOrgId: string) {
     const org = await this.organizationsService.getByClerkOrgId(clerkOrgId);
@@ -43,7 +47,7 @@ export class DatasetsService {
 
   async listDatasets(clerkOrgId: string): Promise<DatasetInfo[]> {
     const org = await this.getActiveOrg(clerkOrgId);
-    const bigquery = new BigQuery({ projectId: org.gcpProjectId! });
+    const bigquery = this.bigqueryClientFactory.getBigQueryReadClient(org.gcpProjectId!);
 
     try {
       const [datasets] = await bigquery.getDatasets();
@@ -66,7 +70,7 @@ export class DatasetsService {
 
   async listDatasetIds(clerkOrgId: string): Promise<{ datasetId: string }[]> {
     const org = await this.getActiveOrg(clerkOrgId);
-    const bigquery = new BigQuery({ projectId: org.gcpProjectId! });
+    const bigquery = this.bigqueryClientFactory.getBigQueryReadClient(org.gcpProjectId!);
     try {
       const [datasets] = await bigquery.getDatasets();
       return datasets.map((dataset) => ({ datasetId: dataset.id! }));
@@ -80,7 +84,7 @@ export class DatasetsService {
     datasetId: string,
   ): Promise<{ tableId: string; type: string }[]> {
     const org = await this.getActiveOrg(clerkOrgId);
-    const bigquery = new BigQuery({ projectId: org.gcpProjectId! });
+    const bigquery = this.bigqueryClientFactory.getBigQueryReadClient(org.gcpProjectId!);
 
     try {
       const [tables] = await bigquery.dataset(datasetId).getTables();
@@ -99,7 +103,7 @@ export class DatasetsService {
     tableId: string,
   ): Promise<TableDetails> {
     const org = await this.getActiveOrg(clerkOrgId);
-    const bigquery = new BigQuery({ projectId: org.gcpProjectId! });
+    const bigquery = this.bigqueryClientFactory.getBigQueryReadClient(org.gcpProjectId!);
 
     let metadata: any;
     try {
@@ -145,7 +149,7 @@ export class DatasetsService {
     maxResults: number,
   ): Promise<{ rows: Record<string, unknown>[]; totalRows: number }> {
     const org = await this.getActiveOrg(clerkOrgId);
-    const bigquery = new BigQuery({ projectId: org.gcpProjectId! });
+    const bigquery = this.bigqueryClientFactory.getBigQueryReadClient(org.gcpProjectId!);
     let rows: any[];
     try {
       [rows] = await bigquery.dataset(datasetId).table(tableId).getRows({
@@ -169,7 +173,7 @@ export class DatasetsService {
 
   async deleteTable(clerkOrgId: string, datasetId: string, tableId: string): Promise<void> {
     const org = await this.getActiveOrg(clerkOrgId);
-    const bigquery = new BigQuery({ projectId: org.gcpProjectId! });
+    const bigquery = this.bigqueryClientFactory.getBigQueryWriteClient(org.gcpProjectId!);
     try {
       await bigquery.dataset(datasetId).table(tableId).delete();
     } catch (error) {
@@ -184,7 +188,7 @@ export class DatasetsService {
     dto: { description?: string; fieldDescriptions?: { path: string; description: string }[] },
   ): Promise<void> {
     const org = await this.getActiveOrg(clerkOrgId);
-    const bigquery = new BigQuery({ projectId: org.gcpProjectId! });
+    const bigquery = this.bigqueryClientFactory.getBigQueryWriteClient(org.gcpProjectId!);
     const table = bigquery.dataset(datasetId).table(tableId);
 
     let metadata: any;
@@ -213,7 +217,7 @@ export class DatasetsService {
     dto: { datasetId: string; location?: string; description?: string },
   ): Promise<{ datasetId: string }> {
     const org = await this.getActiveOrg(clerkOrgId);
-    const bigquery = new BigQuery({ projectId: org.gcpProjectId! });
+    const bigquery = this.bigqueryClientFactory.getBigQueryWriteClient(org.gcpProjectId!);
     try {
       await bigquery.createDataset(dto.datasetId, {
         location: dto.location,
@@ -231,7 +235,7 @@ export class DatasetsService {
     dto: { tableId: string; schema: SchemaField[]; description?: string },
   ): Promise<{ tableId: string }> {
     const org = await this.getActiveOrg(clerkOrgId);
-    const bigquery = new BigQuery({ projectId: org.gcpProjectId! });
+    const bigquery = this.bigqueryClientFactory.getBigQueryWriteClient(org.gcpProjectId!);
     try {
       await bigquery.dataset(datasetId).createTable(dto.tableId, {
         schema: { fields: dto.schema },
@@ -271,17 +275,20 @@ export class DatasetsService {
       );
     }
 
+    const bigquery = this.bigqueryClientFactory.getBigQueryWriteClient(org.gcpProjectId!);
+
     switch (dto.fileType) {
       case 'csv':
-        return this.createTableFromCsv(org.gcpProjectId!, datasetId, dto, fileBuffer);
+        return this.createTableFromCsv(bigquery, org.gcpProjectId!, datasetId, dto, fileBuffer);
       case 'excel':
-        return this.createTableFromExcel(org.gcpProjectId!, datasetId, dto, fileBuffer);
+        return this.createTableFromExcel(bigquery, org.gcpProjectId!, datasetId, dto, fileBuffer);
       case 'json':
-        return this.createTableFromJson(org.gcpProjectId!, datasetId, dto, fileBuffer);
+        return this.createTableFromJson(bigquery, org.gcpProjectId!, datasetId, dto, fileBuffer);
     }
   }
 
   private async createTableFromCsv(
+    bigquery: BigQuery,
     gcpProjectId: string,
     datasetId: string,
     dto: { tableId: string; description?: string },
@@ -294,7 +301,7 @@ export class DatasetsService {
     await gcsFile.save(fileBuffer);
 
     try {
-      const table = new BigQuery({ projectId: gcpProjectId }).dataset(datasetId).table(dto.tableId);
+      const table = bigquery.dataset(datasetId).table(dto.tableId);
       const [job] = await table.load(gcsFile, {
         sourceFormat: 'CSV',
         skipLeadingRows: 1,
@@ -318,6 +325,7 @@ export class DatasetsService {
   }
 
   private async createTableFromExcel(
+    bigquery: BigQuery,
     gcpProjectId: string,
     datasetId: string,
     dto: { tableId: string; description?: string; sheet?: string; startRow?: number },
@@ -367,7 +375,7 @@ export class DatasetsService {
     await gcsFile.save(Buffer.from(ndjson, 'utf8'));
 
     try {
-      const table = new BigQuery({ projectId: gcpProjectId }).dataset(datasetId).table(dto.tableId);
+      const table = bigquery.dataset(datasetId).table(dto.tableId);
       const [job] = await table.load(gcsFile, {
         sourceFormat: 'NEWLINE_DELIMITED_JSON',
         autodetect: true,
@@ -389,6 +397,7 @@ export class DatasetsService {
   }
 
   private async createTableFromJson(
+    bigquery: BigQuery,
     gcpProjectId: string,
     datasetId: string,
     dto: { tableId: string; description?: string },
@@ -417,7 +426,7 @@ export class DatasetsService {
     await gcsFile.save(ndjsonBuffer);
 
     try {
-      const table = new BigQuery({ projectId: gcpProjectId }).dataset(datasetId).table(dto.tableId);
+      const table = bigquery.dataset(datasetId).table(dto.tableId);
       const [job] = await table.load(gcsFile, {
         sourceFormat: 'NEWLINE_DELIMITED_JSON',
         autodetect: true,
@@ -443,7 +452,7 @@ export class DatasetsService {
     query: string,
   ): Promise<{ affectedRows?: number; message: string }> {
     const org = await this.getActiveOrg(clerkOrgId);
-    const bigquery = new BigQuery({ projectId: org.gcpProjectId! });
+    const bigquery = this.bigqueryClientFactory.getBigQueryWriteClient(org.gcpProjectId!);
     try {
       const [job] = await bigquery.createQueryJob({ query });
       await job.getQueryResults();
@@ -465,7 +474,7 @@ export class DatasetsService {
     maxResults: number,
   ): Promise<{ rows: Record<string, unknown>[]; totalRows: number }> {
     const org = await this.getActiveOrg(clerkOrgId);
-    const bigquery = new BigQuery({ projectId: org.gcpProjectId! });
+    const bigquery = this.bigqueryClientFactory.getBigQueryReadClient(org.gcpProjectId!);
 
     let rows: any[];
     try {
@@ -505,7 +514,7 @@ export class DatasetsService {
       throw new BadRequestException(`Invalid column name: "${column}"`);
     }
 
-    const bigquery = new BigQuery({ projectId: org.gcpProjectId! });
+    const bigquery = this.bigqueryClientFactory.getBigQueryReadClient(org.gcpProjectId!);
     const query = `SELECT DISTINCT ${quoteColumn(column)} FROM \`${datasetId}.${tableId}\` ORDER BY 1 LIMIT 100`;
 
     let rows: any[];

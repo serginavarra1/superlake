@@ -49,10 +49,12 @@ export class GcpService {
 
       const [project] = await operation.promise();
 
+
       await this.linkBillingAccount(project.projectId!);
       await this.enableBigQueryApi(project.projectId!);
       await this.enableStorageApi(project.projectId!);
       await this.createStagingBucket(project.projectId!);
+      await this.grantBigQueryRoles(project.projectId!);
 
       await this.prisma.organization.update({
         where: { clerkOrgId },
@@ -143,6 +145,7 @@ export class GcpService {
         billingAccountName: `billingAccounts/${billingAccountId}`,
       },
     });
+    
   }
 
   private async enableBigQueryApi(projectId: string): Promise<void> {
@@ -159,6 +162,33 @@ export class GcpService {
     });
 
     await operation.promise();
+  }
+
+  private async grantBigQueryRoles(projectId: string): Promise<void> {
+    const readSa = `serviceAccount:${this.configService.get<string>('GCP_BQ_READ_SA')}`;
+    const writeSa = `serviceAccount:${this.configService.get<string>('GCP_BQ_WRITE_SA')}`;
+
+    const [policy] = await this.projectsClient.getIamPolicy({
+      resource: `projects/${projectId}`,
+    });
+    const bindings = policy.bindings ?? [];
+
+    const merge = (role: string, member: string) => {
+      const binding = bindings.find((b) => b.role === role);
+      if (binding) binding.members = [...(binding.members ?? []), member];
+      else bindings.push({ role, members: [member] });
+    };
+
+    merge('roles/bigquery.dataViewer', readSa);
+    merge('roles/bigquery.jobUser', readSa);
+    merge('roles/bigquery.dataEditor', writeSa);
+    merge('roles/bigquery.jobUser', writeSa);
+    merge('roles/storage.objectViewer', writeSa);
+
+    await this.projectsClient.setIamPolicy({
+      resource: `projects/${projectId}`,
+      policy: { ...policy, bindings },
+    });
   }
 
   private async createStagingBucket(projectId: string): Promise<void> {

@@ -21,6 +21,12 @@ class EnvironmentVariables {
   GCP_BILLING_ACCOUNT_ID!: string;
 
   @IsString()
+  GCP_BQ_READ_SA!: string;
+
+  @IsString()
+  GCP_BQ_WRITE_SA!: string;
+
+  @IsString()
   @IsOptional()
   CORS_ORIGIN?: string;
 
