@@ -66,7 +66,7 @@ export function ChatInterface({ threadId, onThreadCreated }: ChatInterfaceProps)
       {/* Message list */}
       {(hasMessages || isLoading) ? (
         <div className="flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-3xl py-12 pb-32 space-y-6">
+          <div className="mx-auto max-w-3xl py-12 pb-32 px-4 space-y-6">
             {isLoading && (
               <div className="space-y-6">
                 {Array.from({ length: 3 }).map((_, i) => (
@@ -162,7 +162,7 @@ export function ChatInterface({ threadId, onThreadCreated }: ChatInterfaceProps)
 
       {/* Docked input — only shown when there are messages */}
       {(hasMessages || isLoading) && (
-        <div className="absolute bottom-0 left-0 right-0 pb-6">
+        <div className="absolute bottom-0 left-0 right-0 p-4 pb-6">
           <div className="mx-auto max-w-3xl">
             <ChatInput {...chatInputProps} />
             {error && <ErrorMessage message={error.message} className="mt-2" />}

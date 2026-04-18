@@ -1,5 +1,4 @@
 import {
-  Flame,
   Home,
   Plug,
   ChartPie,
@@ -57,11 +56,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <div className="flex items-center gap-2 p-2 transition-all group-data-[collapsible=icon]:p-0">
-          <div className="flex size-8 items-center justify-center rounded-lg bg-red-500 text-white shrink-0">
-            <Flame className="size-4" strokeWidth={3} />
-          </div>
-          <span className="text-lg font-semibold truncate group-data-[collapsible=icon]:hidden">Unnamed</span>
+        <div className="flex items-center gap-2 px-2 pt-2 transition-all group-data-[collapsible=icon]:p-0">
+          <img src="/superlake-logo.svg" alt="Superlake" className="shrink-0 w-8 h-8" />
+          <span className="text-lg font-semibold truncate group-data-[collapsible=icon]:hidden" style={{ fontFamily: "'Montserrat', sans-serif" }}>Superlake</span>
         </div>
       </SidebarHeader>
       <SidebarContent>
