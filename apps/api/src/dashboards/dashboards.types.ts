@@ -8,6 +8,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Min,
   ValidateNested,
   ValidationArguments,
   ValidationOptions,
@@ -296,6 +297,39 @@ export class BatchUpdateWidgetItemDto {
 
   @IsInt()
   h!: number;
+}
+
+export class WidgetWithLayoutDto {
+  @ValidateNested()
+  @Type(() => WidgetReportConfigDto)
+  config!: WidgetReportConfigDto;
+
+  @IsInt()
+  @Min(0)
+  x!: number;
+
+  @IsInt()
+  @Min(0)
+  y!: number;
+
+  @IsInt()
+  @Min(1)
+  w!: number;
+
+  @IsInt()
+  @Min(1)
+  h!: number;
+}
+
+export class DashboardConfigDto {
+  @IsString()
+  @IsNotEmpty()
+  title!: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => WidgetWithLayoutDto)
+  widgets!: WidgetWithLayoutDto[];
 }
 
 export class BatchUpdateWidgetsDto {

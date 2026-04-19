@@ -224,9 +224,14 @@ export function ReportChart({ config, data, isFetching, isError, bgColor }: Repo
         : String(value ?? "—")
     const label = config.metrics[0] ? metricLabel(config.metrics[0]) : ""
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-2">
-        <span className="text-5xl font-semibold tabular-nums">{formatted}</span>
-        {label && <span className="text-sm text-muted-foreground">{label}</span>}
+      <div className="flex flex-1 flex-col items-center justify-center gap-2 w-full min-w-0 px-4 [container-type:inline-size]">
+        <span
+          className="font-semibold tabular-nums text-center break-all leading-none"
+          style={{ fontSize: "clamp(1rem, 15cqi, 3rem)" }}
+        >
+          {formatted}
+        </span>
+        {label && <span className="text-sm text-muted-foreground text-center">{label}</span>}
       </div>
     )
   }

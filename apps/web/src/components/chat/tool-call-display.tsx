@@ -1,8 +1,9 @@
-import { Check, OctagonPause, X } from 'lucide-react'
+import { Check, LayoutDashboard, OctagonPause, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { type ToolCall } from '@/hooks/use-chat-messages'
 import { ReportChart } from '@/components/report/report-chart'
 import { useReportQuery } from '@/hooks/use-report-query'
+import { useDashboardPreview } from '@/contexts/dashboard-preview-context'
 import type {
   ReportConfig,
   SelectedTable,
@@ -310,6 +311,63 @@ function VisualizationToolResult({ args, result }: { args: Record<string, unknow
   )
 }
 
+// ── Dashboard tool (opens a side panel instead of rendering inline) ────────────
+
+interface DashboardToolArgs {
+  title?: string
+  widgets?: Array<{
+    config: ReportConfig
+    x: number
+    y: number
+    w: number
+    h: number
+  }>
+}
+
+function DashboardToolResult({ args, result }: { args: Record<string, unknown>; result: unknown }) {
+  const { openPreview } = useDashboardPreview()
+
+  const errorMsg = getErrorMessage(result)
+  if (errorMsg) {
+    return (
+      <div className="p-2">
+        <ToolError message={errorMsg} />
+      </div>
+    )
+  }
+
+  const r = result as { valid: boolean; errors?: string[] } | undefined
+  if (r && !r.valid) {
+    return (
+      <div className="space-y-1 p-2">
+        <p className="text-destructive font-medium text-xs">Invalid dashboard configuration</p>
+        {r.errors?.map((e, i) => (
+          // eslint-disable-next-line react/no-array-index-key -- validation errors are short static lists
+          <p key={i} className="text-destructive text-xs">{e}</p>
+        ))}
+      </div>
+    )
+  }
+
+  const typed = args as DashboardToolArgs
+  const title = typed.title ?? 'Dashboard'
+  const widgets = typed.widgets ?? []
+
+  if (!r?.valid) return null
+
+  return (
+    <div className="p-2">
+      <button
+        onClick={() => openPreview({ title, widgets })}
+        className="flex items-center gap-2 rounded-md border bg-background px-3 py-2 text-xs font-sans font-medium hover:bg-muted transition-colors"
+      >
+        <LayoutDashboard className="size-4" />
+        <span className="font-semibold">{title}</span>
+      </button>
+    </div>
+  )
+}
+
 // ── ToolCallItem ───────────────────────────────────────────────────────────────
 
 interface ToolCallItemProps {
@@ -320,9 +378,10 @@ interface ToolCallItemProps {
 
 function ToolCallItem({ toolCall, onApprove, onDecline }: ToolCallItemProps) {
   const isVisualization = toolCall.toolName === 'createVisualizationTool'
+  const isDashboard = toolCall.toolName === 'createDashboardTool'
   const isPendingApproval = toolCall.status === 'pending-approval'
   const inputNode = getToolInput(toolCall.toolName, toolCall.args ?? {})
-  const hasDetails = isVisualization || inputNode !== null || toolCall.result !== undefined || isPendingApproval
+  const hasDetails = isVisualization || isDashboard || inputNode !== null || toolCall.result !== undefined || isPendingApproval
   const hasError = toolCall.status === 'error'
 
   return (
@@ -355,6 +414,14 @@ function ToolCallItem({ toolCall, onApprove, onDecline }: ToolCallItemProps) {
           {isVisualization ? (
             <div className="rounded-b-md bg-gray-50 text-xs font-mono border">
               <VisualizationToolResult args={toolCall.args ?? {}} result={toolCall.result} />
+            </div>
+          ) : isDashboard ? (
+            <div className="rounded-b-md bg-gray-50 text-xs font-mono border">
+              {toolCall.result !== undefined ? (
+                <DashboardToolResult args={toolCall.args ?? {}} result={toolCall.result} />
+              ) : (
+                <div className="p-2 text-muted-foreground font-sans">Preparing dashboard…</div>
+              )}
             </div>
           ) : (
             <div className="rounded-b-md bg-gray-50 px-2.5 py-2 text-xs font-mono border">

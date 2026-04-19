@@ -7,7 +7,8 @@ import { OrganizationsService } from '../organizations/organizations.service';
 import { BigQueryClientFactory } from '../gcp/bigquery-client.factory';
 import { handleGcpError } from '../common/gcp-error';
 import { buildQuery, serialise } from './dashboard.utils'
-import { BatchUpdateWidgetsDto, CreateDashboardDto, CreateWidgetDto, ReportConfigDto, WidgetReportConfigDto, UpdateDashboardDto, UpdateWidgetDto } from './dashboards.types';
+import { BatchUpdateWidgetsDto, CreateDashboardDto, CreateWidgetDto, DashboardConfigDto, ReportConfigDto, WidgetReportConfigDto, UpdateDashboardDto, UpdateWidgetDto } from './dashboards.types';
+import { ValidationError } from 'class-validator';
 
 @Injectable()
 export class DashboardsService {
@@ -302,5 +303,56 @@ export class DashboardsService {
       };
     }
     return { valid: true };
+  }
+
+  async validateDashboardConfig(body: unknown): Promise<{ valid: boolean; errors?: string[] }> {
+    const instance = plainToInstance(DashboardConfigDto, body);
+    const errors = await validate(instance);
+    if (errors.length === 0) return { valid: true };
+
+    const flat: string[] = [];
+    const walk = (err: ValidationError, path: string) => {
+      if (err.constraints) {
+        for (const msg of Object.values(err.constraints)) {
+          flat.push(`${path}: ${msg}`);
+        }
+      }
+      if (err.children?.length) {
+        for (const child of err.children) {
+          const seg = child.property;
+          const nextPath = path ? `${path}.${seg}` : seg;
+          walk(child, nextPath);
+        }
+      }
+    };
+    for (const err of errors) walk(err, err.property);
+
+    const prefixed = flat.map((m) => m.replace(/^widgets\.(\d+)/, (_, i) => `widget[${i}]`));
+    return { valid: false, errors: prefixed };
+  }
+
+  async createWithWidgets(clerkOrgId: string, dto: DashboardConfigDto) {
+    const organization = await this.prisma.organization.findUnique({
+      where: { clerkOrgId },
+    });
+    if (!organization) throw new NotFoundException('Organization not found');
+
+    return this.prisma.dashboard.create({
+      data: {
+        title: dto.title,
+        organizationId: organization.id,
+        widgets: {
+          create: dto.widgets.map((w) => ({
+            type: 'report',
+            config: w.config as unknown as Prisma.InputJsonValue,
+            x: w.x,
+            y: w.y,
+            w: w.w,
+            h: w.h,
+          })),
+        },
+      },
+      include: { widgets: { orderBy: { createdAt: 'asc' } } },
+    });
   }
 }

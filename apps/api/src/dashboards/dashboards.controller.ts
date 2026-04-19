@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post
 import { DashboardsService } from './dashboards.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { ClerkUser } from '../auth/interfaces/clerk-user.interface';
-import { BatchUpdateWidgetsDto, CreateDashboardDto, CreateWidgetDto, ReportConfigDto, UpdateDashboardDto, UpdateWidgetDto } from './dashboards.types';
+import { BatchUpdateWidgetsDto, CreateDashboardDto, CreateWidgetDto, DashboardConfigDto, ReportConfigDto, UpdateDashboardDto, UpdateWidgetDto } from './dashboards.types';
 
 @Controller('dashboards')
 export class DashboardsController {
@@ -90,6 +90,21 @@ export class DashboardsController {
     @Param('widgetId') widgetId: string,
   ) {
     return this.dashboardsService.deleteWidget(user.orgId!, id, widgetId);
+  }
+
+  @Post('validate-dashboard')
+  @HttpCode(HttpStatus.OK)
+  @UsePipes()
+  async validateDashboardConfig(@Body() body: unknown) {
+    return this.dashboardsService.validateDashboardConfig(body);
+  }
+
+  @Post('with-widgets')
+  async createWithWidgets(
+    @CurrentUser() user: ClerkUser,
+    @Body() dto: DashboardConfigDto,
+  ) {
+    return this.dashboardsService.createWithWidgets(user.orgId!, dto);
   }
 
   @Post('widget-data/validate')

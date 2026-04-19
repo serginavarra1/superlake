@@ -57,7 +57,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <div className="flex items-center gap-2 px-2 pt-2 transition-all group-data-[collapsible=icon]:p-0">
-          <img src="/superlake-logo.svg" alt="Superlake" className="shrink-0 w-8 h-8" />
+          <img src="/superlake-logo-small.svg" alt="Superlake" className="shrink-0 w-8 h-8" />
           <span className="text-lg font-semibold truncate group-data-[collapsible=icon]:hidden" style={{ fontFamily: "'Montserrat', sans-serif" }}>Superlake</span>
         </div>
       </SidebarHeader>

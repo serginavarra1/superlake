@@ -24,7 +24,7 @@ export default function DataStudioPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-4rem)]">
+    <div className="h-full">
       <ResizablePanelGroup orientation="horizontal">
         <ResizablePanel defaultSize={300} minSize={200} maxSize={700}>
           <DatasetExplorer
