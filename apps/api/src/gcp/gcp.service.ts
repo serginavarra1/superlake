@@ -164,6 +164,34 @@ export class GcpService {
     await operation.promise();
   }
 
+  async grantFivetranRoles(projectId: string, saEmail: string): Promise<void> {
+    const member = `serviceAccount:${saEmail}`;
+    const [policy] = await this.projectsClient.getIamPolicy({
+      resource: `projects/${projectId}`,
+    });
+    const bindings = policy.bindings ?? [];
+    const roles = [
+      'roles/bigquery.user',
+      'roles/bigquery.dataEditor',
+      'roles/bigquery.jobUser',
+      'roles/storage.objectAdmin',
+    ];
+    for (const role of roles) {
+      const binding = bindings.find((b) => b.role === role);
+      if (binding) {
+        if (!(binding.members ?? []).includes(member)) {
+          binding.members = [...(binding.members ?? []), member];
+        }
+      } else {
+        bindings.push({ role, members: [member] });
+      }
+    }
+    await this.projectsClient.setIamPolicy({
+      resource: `projects/${projectId}`,
+      policy: { ...policy, bindings },
+    });
+  }
+
   private async grantBigQueryRoles(projectId: string): Promise<void> {
     const readSa = `serviceAccount:${this.configService.get<string>('GCP_BQ_READ_SA')}`;
     const writeSa = `serviceAccount:${this.configService.get<string>('GCP_BQ_WRITE_SA')}`;

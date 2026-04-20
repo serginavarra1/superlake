@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { GcpService } from '../gcp/gcp.service';
 import { GcpStatus } from '@prisma/client';
+import { FivetranService } from '../fivetran/fivetran.service';
 
 @Injectable()
 export class OrganizationsService {
@@ -10,6 +11,7 @@ export class OrganizationsService {
   constructor(
     private prisma: PrismaService,
     private gcpService: GcpService,
+    private fivetranService: FivetranService,
   ) {}
 
   async provisionOrganization(
@@ -24,6 +26,7 @@ export class OrganizationsService {
 
       if (existing) {
         if (existing.gcpStatus === GcpStatus.active) {
+          await this.fivetranService.provisionForOrganization(clerkOrgId);
           return;
         }
 
@@ -36,6 +39,7 @@ export class OrganizationsService {
             `Organization ${clerkOrgId} exists with status ${existing.gcpStatus}, retrying GCP provisioning`,
           );
           await this.gcpService.createProject(clerkOrgId, orgName);
+          await this.fivetranService.provisionForOrganization(clerkOrgId);
           return;
         }
 
@@ -51,6 +55,7 @@ export class OrganizationsService {
       });
 
       await this.gcpService.createProject(clerkOrgId, orgName);
+      await this.fivetranService.provisionForOrganization(clerkOrgId);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
@@ -74,7 +79,10 @@ export class OrganizationsService {
         return;
       }
 
-      // Delete the GCP project first
+      // Tear down Fivetran resources before deleting GCP project
+      await this.fivetranService.deprovisionForOrganization(clerkOrgId);
+
+      // Delete the GCP project
       await this.gcpService.deleteProject(clerkOrgId);
 
       // Delete the organization record from the database

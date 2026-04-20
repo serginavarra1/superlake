@@ -27,6 +27,22 @@ class EnvironmentVariables {
   GCP_BQ_WRITE_SA!: string;
 
   @IsString()
+  FIVETRAN_API_KEY!: string;
+
+  @IsString()
+  FIVETRAN_API_SECRET!: string;
+
+  @IsString()
+  @IsOptional()
+  FIVETRAN_BASE_URL?: string;
+
+  @IsString()
+  FIVETRAN_WEBHOOK_SECRET!: string;
+
+  @IsString()
+  FIVETRAN_CONNECT_CARD_REDIRECT_URL!: string;
+
+  @IsString()
   @IsOptional()
   CORS_ORIGIN?: string;
 

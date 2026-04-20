@@ -96,3 +96,25 @@ export interface TableRowsResult {
   rows: Record<string, unknown>[]
   totalRows: number
 }
+
+export interface FivetranConnection {
+  id: string
+  fivetranConnectorId: string
+  service: string
+  schemaName: string
+  syncFrequency: number
+  setupState: string
+  syncState: string
+  lastSyncAt: string | null
+  lastErrorAt: string | null
+  lastErrorMessage: string | null
+  createdAt: string
+}
+
+export interface FivetranService {
+  id: string
+  name: string
+  type: string
+  description?: string
+  icon_url?: string
+}

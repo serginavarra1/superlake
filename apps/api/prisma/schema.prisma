@@ -16,15 +16,47 @@ enum GcpStatus {
   delete_failed
 }
 
+enum FivetranProvisionStatus {
+  pending
+  provisioning
+  active
+  failed
+}
+
 model Organization {
-  id             String      @id @default(cuid())
-  clerkOrgId     String      @unique
-  gcpProjectId   String?     @unique
-  gcpStatus      GcpStatus   @default(pending)
-  gcpError       String?
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-  dashboards     Dashboard[]
+  id                    String      @id @default(cuid())
+  clerkOrgId            String      @unique
+  gcpProjectId          String?     @unique
+  gcpStatus             GcpStatus   @default(pending)
+  gcpError              String?
+  fivetranGroupId       String?     @unique
+  fivetranDestinationId String?     @unique
+  fivetranStatus        FivetranProvisionStatus @default(pending)
+  fivetranError         String?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  dashboards            Dashboard[]
+  connections           FivetranConnection[]
+}
+
+model FivetranConnection {
+  id                   String       @id @default(cuid())
+  organization         Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId       String
+  fivetranConnectorId  String       @unique
+  service              String
+  schemaName           String
+  syncFrequency        Int          @default(360)
+  setupState           String       @default("incomplete")
+  syncState            String       @default("paused")
+  lastSyncAt           DateTime?
+  lastErrorAt          DateTime?
+  lastErrorMessage     String?
+  createdByClerkUserId String
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+
+  @@index([organizationId])
 }
 
 model Dashboard {
