@@ -95,7 +95,7 @@ export function ServicesSection({ onSelect }: ServicesSectionProps) {
       </ItemGroup>
 
       {showPagination && (
-        <Pagination className="mt-auto pt-2 pb-4">
+        <Pagination>
           <PaginationContent>
             <PaginationItem>
               <PaginationPrevious

@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useCreateConnection, useFinalizeConnection } from "@/hooks/use-connections"
+import { openConnectCardPopup } from "@/lib/open-connect-card"
 import type { FivetranService } from "@/types/api"
 
 type Step = "connect" | "setup"
@@ -155,7 +156,7 @@ export function NewConnectionSheet({ open, onOpenChange, service }: NewConnectio
               {connectCardUrl && (
                 <Button
                   className="w-full"
-                  onClick={() => window.open(connectCardUrl, "_blank")}
+                  onClick={() => openConnectCardPopup(connectCardUrl)}
                 >
                   <ExternalLink className="size-4" />
                   Open Setup Wizard

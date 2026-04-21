@@ -31,6 +31,7 @@ export interface FivetranConnectorResponse {
   };
   succeeded_at?: string | null;
   failed_at?: string | null;
+  created_at?: string;
   connect_card?: {
     token: string;
     uri: string;
@@ -149,6 +150,23 @@ export class FivetranClient {
       items: FivetranConnectorMetadata[];
       next_cursor?: string;
     }>('GET', `/v1/metadata/connector-types?${params.toString()}`);
+    return { items: res.items ?? [], nextCursor: res.next_cursor };
+  }
+
+  async listConnections(args: {
+    groupId: string;
+    limit?: number;
+    cursor?: string;
+  }): Promise<{ items: FivetranConnectorResponse[]; nextCursor?: string }> {
+    const params = new URLSearchParams({
+      group_id: args.groupId,
+      limit: String(args.limit ?? 100),
+    });
+    if (args.cursor) params.set('cursor', args.cursor);
+    const res = await this.request<{
+      items: FivetranConnectorResponse[];
+      next_cursor?: string;
+    }>('GET', `/v1/connections?${params.toString()}`);
     return { items: res.items ?? [], nextCursor: res.next_cursor };
   }
 

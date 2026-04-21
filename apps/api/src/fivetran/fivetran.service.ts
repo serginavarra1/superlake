@@ -14,16 +14,12 @@ import {
   Organization,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { FivetranClient } from './fivetran.client';
+import {
+  FivetranClient,
+  FivetranConnectorResponse,
+} from './fivetran.client';
 import { GcpService } from '../gcp/gcp.service';
 import { CreateConnectionDto } from './dto/create-connection.dto';
-
-type FivetranEvent = {
-  event: string;
-  data?: Record<string, unknown>;
-  connector_id?: string;
-  created?: string;
-};
 
 @Injectable()
 export class FivetranService {
@@ -128,16 +124,25 @@ export class FivetranService {
   }
 
   async listConnections(clerkOrgId: string) {
-    const org = await this.requireOrg(clerkOrgId);
-    return this.prisma.fivetranConnection.findMany({
-      where: { organizationId: org.id },
-      orderBy: { createdAt: 'desc' },
-    });
+    const org = await this.requireProvisionedOrg(clerkOrgId);
+    const items: FivetranConnectorResponse[] = [];
+    let cursor: string | undefined;
+    do {
+      const page = await this.fivetran.listConnections({
+        groupId: org.fivetranGroupId!,
+        limit: 1000,
+        cursor,
+      });
+      items.push(...page.items);
+      cursor = page.nextCursor;
+    } while (cursor);
+
+    return items.map((item) => this.toConnectionDto(item));
   }
 
   async createConnection(
     clerkOrgId: string,
-    clerkUserId: string,
+    _clerkUserId: string,
     dto: CreateConnectionDto,
   ) {
     const org = await this.requireProvisionedOrg(clerkOrgId);
@@ -162,149 +167,55 @@ export class FivetranService {
       );
     }
 
-    const row = await this.prisma.fivetranConnection.create({
-      data: {
-        organizationId: org.id,
-        fivetranConnectorId: connector.id,
-        service: dto.service,
-        schemaName: dto.schemaName,
-        syncFrequency,
-        setupState: connector.status?.setup_state ?? 'incomplete',
-        syncState: connector.status?.sync_state ?? 'paused',
-        createdByClerkUserId: clerkUserId,
-      },
-    });
-
-    return { connectionId: row.id, connectCardUrl };
+    return { connectionId: connector.id, connectCardUrl };
   }
 
-  async finalizeConnection(clerkOrgId: string, connectionId: string) {
-    const conn = await this.requireConnection(clerkOrgId, connectionId);
-    const connector = await this.fivetran.getConnector(conn.fivetranConnectorId);
+  async finalizeConnection(clerkOrgId: string, connectorId: string) {
+    const connector = await this.requireOwnedConnector(clerkOrgId, connectorId);
 
     if (connector.status?.setup_state !== 'connected') {
-      return this.prisma.fivetranConnection.update({
-        where: { id: conn.id },
-        data: {
-          setupState: connector.status?.setup_state ?? conn.setupState,
-          syncState: connector.status?.sync_state ?? conn.syncState,
-        },
-      });
+      return this.toConnectionDto(connector);
     }
 
-    await this.fivetran.modifyConnector(conn.fivetranConnectorId, {
-      paused: false,
-    });
-    await this.fivetran.syncNow(conn.fivetranConnectorId).catch((err) => {
+    await this.fivetran.modifyConnector(connectorId, { paused: false });
+    await this.fivetran.syncNow(connectorId).catch((err) => {
       this.logger.warn(
-        `syncNow failed for ${conn.fivetranConnectorId}: ${err instanceof Error ? err.message : err}`,
+        `syncNow failed for ${connectorId}: ${err instanceof Error ? err.message : err}`,
       );
     });
 
-    return this.prisma.fivetranConnection.update({
-      where: { id: conn.id },
-      data: {
-        setupState: 'connected',
-        syncState: 'scheduling',
-      },
-    });
+    const refreshed = await this.fivetran.getConnector(connectorId);
+    return this.toConnectionDto(refreshed);
   }
 
-  async deleteConnection(clerkOrgId: string, connectionId: string) {
-    const conn = await this.requireConnection(clerkOrgId, connectionId);
-    await this.fivetran.deleteConnector(conn.fivetranConnectorId).catch((err) => {
+  async deleteConnection(clerkOrgId: string, connectorId: string) {
+    await this.requireOwnedConnector(clerkOrgId, connectorId);
+    await this.fivetran.deleteConnector(connectorId).catch((err) => {
       this.logger.warn(
-        `deleteConnector failed for ${conn.fivetranConnectorId}: ${err instanceof Error ? err.message : err}`,
+        `deleteConnector failed for ${connectorId}: ${err instanceof Error ? err.message : err}`,
       );
     });
-    await this.prisma.fivetranConnection.delete({ where: { id: conn.id } });
   }
 
-  async triggerSync(clerkOrgId: string, connectionId: string) {
-    const conn = await this.requireConnection(clerkOrgId, connectionId);
-    await this.fivetran.syncNow(conn.fivetranConnectorId);
+  async triggerSync(clerkOrgId: string, connectorId: string) {
+    await this.requireOwnedConnector(clerkOrgId, connectorId);
+    await this.fivetran.syncNow(connectorId);
     return { ok: true };
   }
 
-  async handleWebhook(event: FivetranEvent): Promise<void> {
-    const connectorId =
-      event.connector_id ||
-      (event.data?.connector_id as string | undefined) ||
-      (event.data?.id as string | undefined);
-    if (!connectorId) {
-      this.logger.warn(`Fivetran webhook missing connector_id: ${event.event}`);
-      return;
-    }
-
-    const conn = await this.prisma.fivetranConnection.findUnique({
-      where: { fivetranConnectorId: connectorId },
-    });
-    if (!conn) {
-      this.logger.warn(
-        `Fivetran webhook for unknown connector ${connectorId}`,
-      );
-      return;
-    }
-
-    const now = new Date();
-    const data: Record<string, unknown> = {};
-    const status = String(event.data?.status ?? '').toUpperCase();
-    const reason = String(
-      event.data?.reason ?? event.data?.message ?? 'unknown',
-    );
-
-    switch (event.event) {
-      case 'connection_successful':
-        data.setupState = 'connected';
-        break;
-      case 'connection_failure':
-        data.setupState = 'broken';
-        data.lastErrorAt = now;
-        data.lastErrorMessage = reason;
-        break;
-      case 'sync_start':
-        data.syncState = 'syncing';
-        break;
-      case 'sync_end':
-        if (status === 'SUCCESSFUL' || status === 'SUCCESS') {
-          data.syncState = 'scheduled';
-          data.lastSyncAt = now;
-        } else {
-          data.syncState = 'broken';
-          data.lastErrorAt = now;
-          data.lastErrorMessage = reason;
-        }
-        break;
-      case 'pause_connector':
-        data.syncState = 'paused';
-        break;
-      case 'resume_connector':
-        data.syncState = 'scheduled';
-        break;
-      case 'delete_connector':
-        await this.prisma.fivetranConnection
-          .delete({ where: { id: conn.id } })
-          .catch(() => undefined);
-        return;
-      case 'create_connector':
-      case 'edit_connector':
-      case 'force_update_connector':
-      case 'resync_connector':
-      case 'resync_table':
-      case 'transformation_start':
-      case 'transformation_succeeded':
-      case 'transformation_failed':
-        this.logger.debug(`Ignoring Fivetran event ${event.event}`);
-        return;
-      default:
-        this.logger.debug(`Ignoring Fivetran event ${event.event}`);
-        return;
-    }
-
-    await this.prisma.fivetranConnection.update({
-      where: { id: conn.id },
-      data,
-    });
+  private toConnectionDto(item: FivetranConnectorResponse) {
+    return {
+      id: item.id,
+      service: item.service,
+      schemaName: item.schema,
+      syncFrequency: item.sync_frequency,
+      setupState: item.status?.setup_state ?? 'incomplete',
+      syncState: item.status?.sync_state ?? 'paused',
+      lastSyncAt: item.succeeded_at ?? null,
+      lastErrorAt: item.failed_at ?? null,
+      createdAt: item.created_at ?? null,
+      connectCardUrl: item.connect_card?.uri ?? null,
+    };
   }
 
   private async requireOrg(clerkOrgId: string): Promise<Organization> {
@@ -335,15 +246,20 @@ export class FivetranService {
     return org;
   }
 
-  private async requireConnection(clerkOrgId: string, connectionId: string) {
-    const org = await this.requireOrg(clerkOrgId);
-    const conn = await this.prisma.fivetranConnection.findUnique({
-      where: { id: connectionId },
-    });
-    if (!conn || conn.organizationId !== org.id) {
+  private async requireOwnedConnector(
+    clerkOrgId: string,
+    connectorId: string,
+  ): Promise<FivetranConnectorResponse> {
+    const org = await this.requireProvisionedOrg(clerkOrgId);
+    let connector: FivetranConnectorResponse;
+    try {
+      connector = await this.fivetran.getConnector(connectorId);
+    } catch {
       throw new NotFoundException('Connection not found');
     }
-    return conn;
+    if (connector.group_id !== org.fivetranGroupId) {
+      throw new NotFoundException('Connection not found');
+    }
+    return connector;
   }
-
 }

@@ -4,11 +4,10 @@ import { GcpModule } from '../gcp/gcp.module';
 import { FivetranClient } from './fivetran.client';
 import { FivetranService } from './fivetran.service';
 import { FivetranController } from './fivetran.controller';
-import { FivetranWebhooksController } from './fivetran-webhooks.controller';
 
 @Module({
   imports: [PrismaModule, GcpModule],
-  controllers: [FivetranController, FivetranWebhooksController],
+  controllers: [FivetranController],
   providers: [FivetranClient, FivetranService],
   exports: [FivetranService],
 })

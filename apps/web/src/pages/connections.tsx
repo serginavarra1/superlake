@@ -1,22 +1,36 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import { Plug } from "lucide-react"
+import { Loader2, Plug } from "lucide-react"
 import { useConnections, useDeleteConnection, useFinalizeConnection, useSyncConnection } from "@/hooks/use-connections"
+import { openConnectCardPopup } from "@/lib/open-connect-card"
 import { ConnectionRow } from "@/components/connections/connection-row"
 import { ServicesSection } from "@/components/connections/services-section"
 import { NewConnectionSheet } from "@/components/connections/new-connection-sheet"
 import { DeleteConnectionDialog } from "@/components/connections/delete-connection-dialog"
-import { ItemGroup, ItemSeparator } from "@/components/ui/item"
+import { ItemGroup } from "@/components/ui/item"
 import type { FivetranConnection, FivetranService } from "@/types/api"
 
 export default function ConnectionsPage() {
   const [selectedService, setSelectedService] = useState<FivetranService | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
+  const queryClient = useQueryClient()
   const { data: connections = [], isLoading, isError } = useConnections()
   const deleteConnection = useDeleteConnection()
   const finalizeConnection = useFinalizeConnection()
   const syncConnection = useSyncConnection()
+
+  useEffect(() => {
+    function onMessage(event: MessageEvent) {
+      if (event.origin !== window.location.origin) return
+      if (event.data?.type === "fivetran-connect-card-closed") {
+        queryClient.invalidateQueries({ queryKey: ["connections"] })
+      }
+    }
+    window.addEventListener("message", onMessage)
+    return () => window.removeEventListener("message", onMessage)
+  }, [queryClient])
 
   const deleteTarget = deleteId ? (connections as FivetranConnection[]).find((c) => c.id === deleteId) : null
 
@@ -43,7 +57,8 @@ export default function ConnectionsPage() {
   }
 
   function handleCompleteSetup(connectCardUrl: string) {
-    window.open(connectCardUrl, "_blank")
+    const popup = openConnectCardPopup(connectCardUrl)
+    if (!popup) toast.error("Please allow popups to complete the setup")
   }
 
   const connectionList = connections as FivetranConnection[]
@@ -57,7 +72,9 @@ export default function ConnectionsPage() {
       <div className="flex flex-col gap-3">
         <h2 className="text-sm font-medium text-muted-foreground">Your connections</h2>
         {isLoading && (
-          <p className="text-sm text-muted-foreground py-4">Loading connections…</p>
+          <div className="flex items-center justify-center py-12 text-muted-foreground">
+            <Loader2 className="size-5 animate-spin" />
+          </div>
         )}
         {isError && (
           <p className="text-sm text-destructive py-4">Failed to load connections.</p>
@@ -71,10 +88,9 @@ export default function ConnectionsPage() {
           </div>
         )}
         {!isLoading && !isError && connectionList.length > 0 && (
-          <ItemGroup>
+          <ItemGroup className="gap-2">
             {connectionList.map((connection, i) => (
               <div key={connection.id}>
-                {i > 0 && <ItemSeparator />}
                 <ConnectionRow
                   connection={connection}
                   onCompleteSetup={handleCompleteSetup}

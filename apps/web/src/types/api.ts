@@ -99,7 +99,6 @@ export interface TableRowsResult {
 
 export interface FivetranConnection {
   id: string
-  fivetranConnectorId: string
   service: string
   schemaName: string
   syncFrequency: number
@@ -107,8 +106,8 @@ export interface FivetranConnection {
   syncState: string
   lastSyncAt: string | null
   lastErrorAt: string | null
-  lastErrorMessage: string | null
-  createdAt: string
+  createdAt: string | null
+  connectCardUrl: string | null
 }
 
 export interface FivetranService {

@@ -37,9 +37,6 @@ class EnvironmentVariables {
   FIVETRAN_BASE_URL?: string;
 
   @IsString()
-  FIVETRAN_WEBHOOK_SECRET!: string;
-
-  @IsString()
   FIVETRAN_CONNECT_CARD_REDIRECT_URL!: string;
 
   @IsString()

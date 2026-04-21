@@ -17,6 +17,7 @@ import DashboardBuilder from './components/dashboard/dashboard-builder'
 import AIChatPage from './pages/ai-chat'
 import DataStudioPage from './pages/data-studio'
 import ConnectionsPage from './pages/connections'
+import ConnectionsCallbackPage from './pages/connections-callback'
 
 function App() {
   return (
@@ -35,6 +36,9 @@ function App() {
                 <Route path="/sign-in/*" element={<SignInPage />} />
                 <Route path="/sign-up/*" element={<SignUpPage />} />
               </Route>
+
+              {/* Public Fivetran Connect Card callback (opened as popup) */}
+              <Route path="/data-management/connections/callback" element={<ConnectionsCallbackPage />} />
 
               {/* Protected routes */}
               <Route element={<ProtectedRoute />}>

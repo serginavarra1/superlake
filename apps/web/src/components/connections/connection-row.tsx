@@ -43,10 +43,8 @@ export function ConnectionRow({
 
   return (
     <Item size="sm" variant={"outline"}>
-      <ItemMedia variant="icon">
-        <div className="flex size-8 items-center justify-center rounded-md bg-blue-500 text-white shrink-0">
-          <Plug className="size-3.5" />
-        </div>
+      <ItemMedia variant="icon" className="h-10 w-10">
+        <Plug className="size-5" />
       </ItemMedia>
       <ItemContent>
         <ItemTitle>
@@ -62,7 +60,7 @@ export function ConnectionRow({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
-              className="rounded p-1 hover:bg-muted opacity-0 group-hover/row:opacity-100 transition-opacity"
+              className="rounded p-1 hover:bg-muted"
               onClick={(e) => e.stopPropagation()}
             >
               <MoreHorizontal className="size-4 text-muted-foreground" />
@@ -72,9 +70,12 @@ export function ConnectionRow({
             {!isConnected && (
               <>
                 <DropdownMenuItem
+                  disabled={!connection.connectCardUrl}
                   onClick={(e) => {
                     e.stopPropagation()
-                    onCompleteSetup(connection.fivetranConnectorId)
+                    if (connection.connectCardUrl) {
+                      onCompleteSetup(connection.connectCardUrl)
+                    }
                   }}
                 >
                   <ExternalLink className="size-4" />
