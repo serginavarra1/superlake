@@ -89,7 +89,7 @@ export default function ConnectionsPage() {
         )}
         {!isLoading && !isError && connectionList.length > 0 && (
           <ItemGroup className="gap-2">
-            {connectionList.map((connection, i) => (
+            {connectionList.map((connection) => (
               <div key={connection.id}>
                 <ConnectionRow
                   connection={connection}

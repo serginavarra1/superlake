@@ -1,0 +1,20 @@
+org_id               = "123456789012"
+billing_account_id   = "0X0X0X-0X0X0X-0X0X0X"
+base_project_id      = "superlake-platform-prod"
+base_project_name    = "Superlake Platform"
+bootstrap_project_id = "my-bootstrap-project-id"
+region               = "europe-southwest1"
+db_tier              = "db-f1-micro"
+
+# These are Cloud Run URLs — they're circular until first deploy.
+# Set to placeholder values now; update after the first terraform apply + deploy.
+cors_origin                        = "https://superlake-web-<hash>-ew.a.run.app"
+api_base_url_for_agent             = "https://superlake-api-<hash>-ew.a.run.app"
+fivetran_connect_card_redirect_url = "https://superlake-web-<hash>-ew.a.run.app/data-management/connections/callback"
+
+# Clerk JWKS URI for the agent (Clerk Dashboard → API Keys → Show JWKS URL)
+clerk_jwks_uri = "https://your-instance.clerk.accounts.dev/.well-known/jwks.json"
+
+# GitHub repo allowed to impersonate the CI/CD service account via WIF.
+# Format: "owner/repo". Only this repo's workflows can deploy.
+github_repo = "owner/repo"

@@ -37,7 +37,8 @@ export async function apiFetch<T>(
     headers.set('Content-Type', 'application/json')
   }
 
-  const response = await fetch(`/api${path}`, { ...init, headers })
+  const baseUrl = import.meta.env.VITE_API_URL ?? ''
+  const response = await fetch(`${baseUrl}/api${path}`, { ...init, headers })
 
   if (!response.ok) {
     let data: ApiErrorType
