@@ -15,7 +15,7 @@ Pending
 
 ## Architecture diagram
 
-![Superlake architecture](assets/superlake_architecture_diagram.png)
+![Superlake architecture](docs/superlake_architecture_diagram.png)
 
 ## Tech Stack
 
