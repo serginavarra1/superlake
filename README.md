@@ -2,8 +2,7 @@
 
 Superlake is a **SaaS data analytics platform** driven by **AI agents** that enables organizations to explore their data and surface insights through a **conversational interface**. Users ask questions in **plain language** and receive answers in the form of complex **analyses**, **charts**, and **dashboards** generated automatically.
 
-
-### How it works
+## How it works
 
 1. **Connect** your data sources or upload your files
 2. **Ask** questions in plain language via the AI agent
@@ -11,6 +10,7 @@ Superlake is a **SaaS data analytics platform** driven by **AI agents** that ena
 4. **Share** insights across your team
 
 ## Demo video
+
 Pending
 
 ## Architecture diagram

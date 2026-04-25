@@ -15,7 +15,7 @@ export default function HomePage() {
     <div className="flex flex-col gap-6 pt-12 max-w-5xl mx-auto h-full overflow-auto">
       {/* Page header */}
       <div>
-        <h1 className="text-2xl font-semibold">Welcome back, {user?.firstName ?? user?.username ?? "there"}!</h1>
+        <h1 className="text-2xl font-semibold">Welcome back, {user?.firstName ?? user?.username ?? "there"}</h1>
       </div>
 
       {/* Quick actions */}

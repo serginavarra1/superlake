@@ -74,7 +74,6 @@ export const mastra = new Mastra({
         ],
         spanOutputProcessors: [
           new SensitiveDataFilter(), // Redacts sensitive data like passwords, tokens, keys
-          new TokenLogger(),
         ],
       },
     },
