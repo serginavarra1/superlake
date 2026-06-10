@@ -11,10 +11,6 @@ Superlake is a **SaaS data analytics platform** driven by **AI agents** that ena
 3. **Receive** analyses, charts, and dashboards automatically
 4. **Share** insights across your team
 
-## Demo video
-
-[![Ver demo](https://img.youtube.com/vi/jRvrkotbD_Y/0.jpg)](https://www.youtube.com/watch?v=jRvrkotbD_Y)
-
 ## Architecture diagram
 
 ![Superlake architecture](docs/superlake_architecture_diagram.png)
